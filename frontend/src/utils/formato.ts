@@ -18,6 +18,20 @@ export function formatearFechaHora(iso: string) {
   return `${dia} ${dosDigitos(fecha.getHours())}:${dosDigitos(fecha.getMinutes())}`;
 }
 
+// Montos en pesos: "$ 25.000,00".
+export function formatearMoneda(valor: string | number) {
+  return Number(valor).toLocaleString("es-AR", { style: "currency", currency: "ARS" });
+}
+
+// Suma meses a "aaaa-mm-dd" respetando el fin de mes (31-01 + 1 mes = 28-02). Igual que en el backend.
+export function sumarMeses(texto: string, meses: number) {
+  const [anio, mes, dia] = texto.split("-").map(Number);
+  const fecha = new Date(Date.UTC(anio, mes - 1 + meses, 1));
+  const ultimoDiaDelMes = new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth() + 1, 0)).getUTCDate();
+  fecha.setUTCDate(Math.min(dia, ultimoDiaDelMes));
+  return fecha.toISOString().slice(0, 10);
+}
+
 export function calcularEdad(fechaNacimiento: string) {
   const [anio, mes, dia] = fechaNacimiento.slice(0, 10).split("-").map(Number);
   const hoy = new Date();

@@ -8,6 +8,8 @@ import { alumnosRouter } from "./modulos/alumnos/alumnos.routes";
 import { anotacionesRouter } from "./modulos/anotaciones/anotaciones.routes";
 import { authRouter } from "./modulos/auth/auth.routes";
 import { evaluacionesRouter } from "./modulos/evaluaciones/evaluaciones.routes";
+import { pagosRouter } from "./modulos/pagos/pagos.routes";
+import { planesRouter } from "./modulos/planes/planes.routes";
 import { pruebasRouter } from "./modulos/pruebas/pruebas.routes";
 
 // Mensajes de error de Zod en español para los casos sin mensaje propio.
@@ -35,7 +37,9 @@ app.use("/api/alumnos", alumnosRouter);
 app.use("/api", anotacionesRouter);
 app.use("/api/pruebas", pruebasRouter);
 app.use("/api", evaluacionesRouter);
-// (próximos módulos: pagos, panel)
+app.use("/api/planes", planesRouter);
+app.use("/api", pagosRouter);
+// (próximo módulo: panel)
 
 app.use("/api", rutaNoEncontrada);
 app.use(manejarErrores);

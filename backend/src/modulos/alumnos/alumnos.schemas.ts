@@ -66,6 +66,10 @@ export const esquemaEstado = z.object({
   activo: z.boolean({ error: "Indicá si el alumno queda activo o inactivo" }),
 });
 
+export const esquemaPlanAlumno = z.object({
+  planId: z.number({ error: "Elegí un plan" }).int().positive().nullable(),
+});
+
 // Filtros del listado: llegan por query string (?buscar=...&estado=...&perfil=...).
 export const esquemaFiltros = z.object({
   buscar: z.string().trim().optional(),

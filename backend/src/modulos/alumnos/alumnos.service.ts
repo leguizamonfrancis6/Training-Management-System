@@ -61,7 +61,7 @@ export async function listarAlumnos(filtros: FiltrosAlumnos) {
 export async function obtenerAlumno(id: number) {
   const alumno = await prisma.alumno.findUnique({
     where: { id },
-    include: { plan: { select: { id: true, nombre: true } } },
+    include: { plan: { select: { id: true, nombre: true, modalidad: true, precioMensual: true, activo: true } } },
   });
   if (!alumno) {
     throw new ErrorHttp(404, "Alumno no encontrado");
@@ -108,6 +108,27 @@ export async function actualizarAlumno(id: number, datos: DatosAlumno) {
     if (cambios.length > 0) {
       await tx.cambioAlumno.createMany({ data: cambios });
     }
+    return alumno;
+  });
+}
+
+// Asigna (o quita, con null) el plan del alumno. Queda en el historial con el nombre del plan.
+export async function cambiarPlan(id: number, planId: number | null) {
+  const actual = await obtenerAlumno(id);
+  if (actual.planId === planId) {
+    return actual;
+  }
+
+  const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
+  if (planId && (!plan || !plan.activo)) {
+    throw new ErrorHttp(400, "Ese plan no existe o fue eliminado");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const alumno = await tx.alumno.update({ where: { id }, data: { planId } });
+    await tx.cambioAlumno.create({
+      data: { alumnoId: id, campo: "plan", valorAnterior: actual.plan?.nombre ?? null, valorNuevo: plan?.nombre ?? null },
+    });
     return alumno;
   });
 }

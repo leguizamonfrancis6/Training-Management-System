@@ -17,6 +17,9 @@ export default function Layout() {
               Inicio
             </NavLink>
             <NavLink to="/alumnos">Alumnos</NavLink>
+            <NavLink to="/pagos">Pagos</NavLink>
+            <NavLink to="/ingresos">Ingresos</NavLink>
+            <NavLink to="/planes">Planes</NavLink>
             <NavLink to="/pruebas">Evaluaciones</NavLink>
           </nav>
           <div className="encabezado-usuario">

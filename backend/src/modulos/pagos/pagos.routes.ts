@@ -1,0 +1,47 @@
+import { Router } from "express";
+import { leerId } from "../../lib/errores";
+import { validar } from "../../middlewares/validar";
+import { esquemaPago, esquemaRangoIngresos, type DatosPago } from "./pagos.schemas";
+import {
+  anularSaldo,
+  eliminarPago,
+  obtenerEstadoCuotas,
+  obtenerIngresos,
+  obtenerPagosAlumno,
+  registrarPago,
+} from "./pagos.service";
+
+// Se monta en /api.
+export const pagosRouter = Router();
+
+// GET /api/pagos/estado-cuotas  → alumnos activos con el estado de su cuota (lo urgente primero)
+pagosRouter.get("/pagos/estado-cuotas", async (_req, res) => {
+  res.json(await obtenerEstadoCuotas());
+});
+
+// GET /api/pagos/ingresos?desde=aaaa-mm-dd&hasta=aaaa-mm-dd
+pagosRouter.get("/pagos/ingresos", async (req, res) => {
+  const { desde, hasta } = esquemaRangoIngresos.parse(req.query);
+  res.json(await obtenerIngresos(desde, hasta));
+});
+
+// GET /api/alumnos/:alumnoId/pagos  → { plan, situacion, pagos }
+pagosRouter.get("/alumnos/:alumnoId/pagos", async (req, res) => {
+  res.json(await obtenerPagosAlumno(leerId(req.params.alumnoId)));
+});
+
+// POST /api/alumnos/:alumnoId/pagos  { tipo: "CUOTA" | "SALDO" | "OTRO", ... }
+pagosRouter.post("/alumnos/:alumnoId/pagos", validar(esquemaPago), async (req, res) => {
+  res.status(201).json(await registrarPago(leerId(req.params.alumnoId), req.body as DatosPago));
+});
+
+// DELETE /api/pagos/:id
+pagosRouter.delete("/pagos/:id", async (req, res) => {
+  await eliminarPago(leerId(req.params.id));
+  res.status(204).end();
+});
+
+// POST /api/cuotas/:id/anular-saldo
+pagosRouter.post("/cuotas/:id/anular-saldo", async (req, res) => {
+  res.json(await anularSaldo(leerId(req.params.id)));
+});

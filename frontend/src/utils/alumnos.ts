@@ -23,6 +23,7 @@ export const ETIQUETAS_CAMPO: Record<string, string> = {
   molestias: "Molestias/contracturas",
   actividadLaboral: "Actividad laboral",
   otrosDatos: "Otros datos",
+  plan: "Plan",
   activo: "Estado",
 };
 

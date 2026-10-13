@@ -1,4 +1,5 @@
 import { pedir } from "./cliente";
+import type { Plan } from "./planes";
 
 export type Perfil = "DEPORTIVO" | "SALUD" | "RECUPERACION";
 export type EstadoFiltro = "activos" | "inactivos" | "todos";
@@ -25,7 +26,7 @@ export interface Alumno extends AlumnoResumen {
   molestias: string | null;
   actividadLaboral: string | null;
   otrosDatos: string | null;
-  plan: { id: number; nombre: string } | null;
+  plan: Plan | null;
   creadoEn: string;
 }
 
@@ -81,4 +82,7 @@ export const alumnosApi = {
 
   cambiarEstado: (id: number, activo: boolean) =>
     pedir<Alumno>(`/alumnos/${id}/estado`, { metodo: "PATCH", datos: { activo } }),
+
+  cambiarPlan: (id: number, planId: number | null) =>
+    pedir<Alumno>(`/alumnos/${id}/plan`, { metodo: "PATCH", datos: { planId } }),
 };

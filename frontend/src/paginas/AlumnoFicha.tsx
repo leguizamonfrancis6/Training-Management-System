@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import { alumnosApi, type Alumno, type CambioAlumno } from "../api/alumnos";
 import AnotacionesAlumno from "../componentes/AnotacionesAlumno";
 import EvaluacionesAlumno from "../componentes/EvaluacionesAlumno";
+import PagosAlumno from "../componentes/PagosAlumno";
 import { ETIQUETAS_CAMPO, ETIQUETAS_PERFIL, formatearValorCambio } from "../utils/alumnos";
 import { calcularEdad, formatearFecha, formatearFechaHora } from "../utils/formato";
 
@@ -107,7 +108,6 @@ export default function AlumnoFicha() {
           <Dato etiqueta="Teléfono">{alumno.telefono}</Dato>
           <Dato etiqueta="Email">{alumno.email}</Dato>
           <Dato etiqueta="Profesión">{alumno.profesion}</Dato>
-          <Dato etiqueta="Plan">{alumno.plan?.nombre ?? "Sin plan asignado"}</Dato>
           <Dato etiqueta="Alta en el sistema">{formatearFecha(alumno.creadoEn)}</Dato>
         </dl>
       </div>
@@ -134,6 +134,8 @@ export default function AlumnoFicha() {
       <AnotacionesAlumno alumnoId={alumno.id} />
 
       <EvaluacionesAlumno alumnoId={alumno.id} />
+
+      <PagosAlumno alumno={alumno} onCambioPlan={cargar} />
 
       <div className="tarjeta seccion">
         <h2>Historial de cambios</h2>

@@ -508,6 +508,160 @@ h2 {
   margin-bottom: 12px;
 }
 
+/* ---------- Pagos ---------- */
+
+.numero {
+  text-align: right;
+}
+
+.primera-mayuscula::first-letter {
+  text-transform: uppercase;
+}
+
+.pago-plan {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.pago-plan select {
+  padding: 6px 10px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  font: inherit;
+  background: var(--color-superficie);
+  max-width: 100%;
+}
+
+.pago-estado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.pago-saldo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--color-error-fondo);
+  border-radius: var(--radio);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.boton-whatsapp {
+  display: inline-block;
+  background: #16a34a;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: var(--radio);
+}
+
+.boton-whatsapp:hover {
+  background: #15803d;
+}
+
+.formulario-pago {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.formulario-pago h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.opciones-tipo {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.opciones-tipo label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.filtros-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.chip {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  cursor: pointer;
+}
+
+.chip-activo {
+  background: var(--color-primario);
+  border-color: var(--color-primario);
+  color: #fff;
+}
+
+.filtros-rango {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.filtros-rango .campo input {
+  width: auto;
+}
+
+.filtros-rango .acciones {
+  margin-bottom: 16px;
+}
+
+.totales {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.total {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+}
+
+.total strong {
+  font-size: 1.2rem;
+}
+
+.total-principal {
+  border-color: var(--color-primario);
+}
+
+.total-principal strong {
+  color: var(--color-primario);
+}
+
 @media (max-width: 800px) {
   .fila-resultado-campos,
   .formulario-prueba {

@@ -7,8 +7,11 @@ import AlumnoFicha from "./paginas/AlumnoFicha";
 import AlumnoFormulario from "./paginas/AlumnoFormulario";
 import Alumnos from "./paginas/Alumnos";
 import EvaluacionFormulario from "./paginas/EvaluacionFormulario";
+import Ingresos from "./paginas/Ingresos";
 import Inicio from "./paginas/Inicio";
 import Login from "./paginas/Login";
+import Pagos from "./paginas/Pagos";
+import Planes from "./paginas/Planes";
 import Pruebas from "./paginas/Pruebas";
 
 export default function App() {
@@ -30,6 +33,9 @@ export default function App() {
               <Route path="alumnos/:id/evaluaciones/nueva" element={<EvaluacionFormulario />} />
               <Route path="evaluaciones/:evaluacionId/editar" element={<EvaluacionFormulario />} />
               <Route path="pruebas" element={<Pruebas />} />
+              <Route path="pagos" element={<Pagos />} />
+              <Route path="ingresos" element={<Ingresos />} />
+              <Route path="planes" element={<Planes />} />
             </Route>
           </Route>
 
