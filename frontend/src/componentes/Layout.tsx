@@ -17,6 +17,7 @@ export default function Layout() {
               Inicio
             </NavLink>
             <NavLink to="/alumnos">Alumnos</NavLink>
+            <NavLink to="/pruebas">Evaluaciones</NavLink>
           </nav>
           <div className="encabezado-usuario">
             <span>{usuario?.nombre}</span>

@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { z } from "zod";
 import { ErrorHttp } from "../lib/errores";
+import { erroresPorCampo } from "./validar";
 
 export const rutaNoEncontrada: RequestHandler = (_req, res) => {
   res.status(404).json({ error: "Ruta no encontrada" });
@@ -16,7 +17,7 @@ export const manejarErrores: ErrorRequestHandler = (error, _req, res, _next) => 
   }
   // Validaciones hechas con esquema.parse() dentro de una ruta (ej.: filtros de búsqueda).
   if (error instanceof z.ZodError) {
-    res.status(400).json({ error: "Datos inválidos", campos: z.flattenError(error).fieldErrors });
+    res.status(400).json({ error: "Datos inválidos", campos: erroresPorCampo(error) });
     return;
   }
   // JSON mal formado en el cuerpo del pedido: es un error del cliente, no del servidor.

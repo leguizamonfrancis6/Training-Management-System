@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { alumnosApi, type Alumno, type CambioAlumno } from "../api/alumnos";
 import AnotacionesAlumno from "../componentes/AnotacionesAlumno";
+import EvaluacionesAlumno from "../componentes/EvaluacionesAlumno";
 import { ETIQUETAS_CAMPO, ETIQUETAS_PERFIL, formatearValorCambio } from "../utils/alumnos";
 import { calcularEdad, formatearFecha, formatearFechaHora } from "../utils/formato";
 
@@ -131,6 +132,8 @@ export default function AlumnoFicha() {
       </div>
 
       <AnotacionesAlumno alumnoId={alumno.id} />
+
+      <EvaluacionesAlumno alumnoId={alumno.id} />
 
       <div className="tarjeta seccion">
         <h2>Historial de cambios</h2>

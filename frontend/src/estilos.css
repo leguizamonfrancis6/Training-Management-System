@@ -434,6 +434,92 @@ h2 {
   color: var(--color-error);
 }
 
+/* ---------- Evaluaciones ---------- */
+
+.insignia-alerta {
+  background: var(--color-error-fondo);
+  border-color: #fecaca;
+  color: var(--color-error);
+}
+
+.insignia-aviso {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+.proxima-evaluacion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+
+.tabla-comparacion td:not(:first-child),
+.tabla-comparacion th:not(:first-child) {
+  text-align: right;
+}
+
+.fila-resultado {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: 12px 12px 0;
+  margin-bottom: 12px;
+}
+
+.fila-resultado-campos {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 0.8fr 1.4fr;
+  gap: 0 12px;
+}
+
+.fila-resultado-pie {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.fila-resultado-pie .campo {
+  flex: 1;
+}
+
+.fila-resultado-pie .boton-link {
+  margin-top: 28px;
+}
+
+/* ---------- Pruebas ---------- */
+
+.formulario-prueba {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 0.8fr auto;
+  gap: 0 12px;
+  align-items: start;
+}
+
+.formulario-prueba-acciones {
+  margin-top: 26px;
+}
+
+.casilla {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 800px) {
+  .fila-resultado-campos,
+  .formulario-prueba {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formulario-prueba-acciones {
+    margin-top: 0;
+    margin-bottom: 16px;
+  }
+}
+
 @media (max-width: 640px) {
   .encabezado-contenido {
     flex-wrap: wrap;
