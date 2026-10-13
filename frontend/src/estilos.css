@@ -359,6 +359,81 @@ h2 {
   white-space: pre-line;
 }
 
+/* ---------- Anotaciones ---------- */
+
+.separador {
+  border-top: 1px solid var(--color-borde);
+  margin: 8px 0 16px;
+}
+
+.lista-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.lista-encabezado select {
+  padding: 6px 10px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  font: inherit;
+  background: var(--color-superficie);
+}
+
+.lista-anotaciones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.anotacion {
+  border-top: 1px solid var(--color-borde);
+  padding: 12px 0;
+}
+
+.anotacion p {
+  margin: 6px 0 0;
+}
+
+.anotacion-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.anotacion-acciones {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.boton-desplegar {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.boton-link {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--color-primario);
+  cursor: pointer;
+  border-radius: var(--radio);
+}
+
+.boton-link:hover {
+  background: var(--color-fondo);
+}
+
+.boton-link.peligro {
+  color: var(--color-error);
+}
+
 @media (max-width: 640px) {
   .encabezado-contenido {
     flex-wrap: wrap;

@@ -1,0 +1,225 @@
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { anotacionesApi, type Anotacion, type DatosAnotacion, type TipoAnotacion } from "../api/anotaciones";
+import { ErrorApi } from "../api/cliente";
+import { ETIQUETAS_TIPO_ANOTACION } from "../utils/anotaciones";
+import { formatearFecha, hoyComoTexto } from "../utils/formato";
+import Campo from "./Campo";
+
+// Cantidad de anotaciones que se ven sin desplegar la lista.
+const CANTIDAD_INICIAL = 2;
+
+function anotacionVacia(): DatosAnotacion {
+  return { fecha: hoyComoTexto(), tipo: "OBSERVACION", detalle: "", motivo: "" };
+}
+
+function datosDesdeAnotacion(anotacion: Anotacion): DatosAnotacion {
+  return {
+    fecha: anotacion.fecha.slice(0, 10),
+    tipo: anotacion.tipo,
+    detalle: anotacion.detalle,
+    motivo: anotacion.motivo ?? "",
+  };
+}
+
+interface PropsFormulario {
+  inicial: DatosAnotacion;
+  textoBoton: string;
+  onGuardar: (datos: DatosAnotacion) => Promise<void>;
+  onCancelar?: () => void;
+}
+
+// Formulario de una anotación: se usa para cargar una nueva y para editar una existente.
+function FormularioAnotacion({ inicial, textoBoton, onGuardar, onCancelar }: PropsFormulario) {
+  const [datos, setDatos] = useState(inicial);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
+  const [errores, setErrores] = useState<Record<string, string[]>>({});
+
+  function cambiar(campo: keyof DatosAnotacion, valor: string) {
+    setDatos((anteriores) => ({ ...anteriores, [campo]: valor }));
+  }
+
+  async function enviar(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    setError("");
+    setErrores({});
+    setGuardando(true);
+    try {
+      await onGuardar(datos);
+      // Al cargar una nueva, el formulario queda limpio para la siguiente (con la fecha de hoy).
+      setDatos(anotacionVacia());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar");
+      if (err instanceof ErrorApi) setErrores(err.campos);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <form className="formulario-anotacion" onSubmit={enviar} noValidate>
+      {error && <p className="mensaje-error">{error}</p>}
+      <div className="grilla">
+        <Campo etiqueta="Fecha" obligatorio errores={errores.fecha}>
+          <input type="date" value={datos.fecha} max={hoyComoTexto()} onChange={(e) => cambiar("fecha", e.target.value)} />
+        </Campo>
+        <Campo etiqueta="Tipo" obligatorio errores={errores.tipo}>
+          <select value={datos.tipo} onChange={(e) => cambiar("tipo", e.target.value)}>
+            {Object.entries(ETIQUETAS_TIPO_ANOTACION).map(([valor, etiqueta]) => (
+              <option key={valor} value={valor}>
+                {etiqueta}
+              </option>
+            ))}
+          </select>
+        </Campo>
+      </div>
+      <Campo etiqueta="Detalle" obligatorio errores={errores.detalle}>
+        <textarea
+          rows={3}
+          value={datos.detalle}
+          onChange={(e) => cambiar("detalle", e.target.value)}
+          placeholder="Ej.: se reemplazó sentadilla con barra por sentadilla goblet"
+        />
+      </Campo>
+      <Campo etiqueta="Motivo" errores={errores.motivo} ayuda="Opcional: por qué se hizo el cambio">
+        <input value={datos.motivo} onChange={(e) => cambiar("motivo", e.target.value)} />
+      </Campo>
+      <div className="acciones">
+        <button type="submit" className="boton" disabled={guardando}>
+          {guardando ? "Guardando…" : textoBoton}
+        </button>
+        {onCancelar && (
+          <button type="button" className="boton-secundario" onClick={onCancelar}>
+            Cancelar
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+// Sección de anotaciones de entrenamiento dentro de la ficha del alumno.
+export default function AnotacionesAlumno({ alumnoId }: { alumnoId: number }) {
+  const [anotaciones, setAnotaciones] = useState<Anotacion[] | null>(null);
+  const [error, setError] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState<TipoAnotacion | "">("");
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [verTodas, setVerTodas] = useState(false);
+
+  const cargar = useCallback(async () => {
+    try {
+      setAnotaciones(await anotacionesApi.listar(alumnoId));
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudieron cargar las anotaciones");
+    }
+  }, [alumnoId]);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  async function crear(datos: DatosAnotacion) {
+    await anotacionesApi.crear(alumnoId, datos);
+    await cargar();
+  }
+
+  async function actualizar(id: number, datos: DatosAnotacion) {
+    await anotacionesApi.actualizar(id, datos);
+    setEditandoId(null);
+    await cargar();
+  }
+
+  async function eliminar(anotacion: Anotacion) {
+    const pregunta = `¿Eliminar la anotación del ${formatearFecha(anotacion.fecha)}? No se puede deshacer.`;
+    if (!window.confirm(pregunta)) return;
+    try {
+      await anotacionesApi.eliminar(anotacion.id);
+      await cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo eliminar");
+    }
+  }
+
+  const filtradas = anotaciones?.filter((a) => !filtroTipo || a.tipo === filtroTipo) ?? [];
+  // Para que la ficha no se haga larga, se muestran solo las últimas; el resto se despliega con un botón.
+  const visibles = verTodas ? filtradas : filtradas.slice(0, CANTIDAD_INICIAL);
+
+  return (
+    <div className="tarjeta seccion">
+      <h2>Anotaciones de entrenamiento</h2>
+
+      <FormularioAnotacion inicial={anotacionVacia()} textoBoton="Agregar anotación" onGuardar={crear} />
+
+      <div className="separador" />
+
+      {error && <p className="mensaje-error">{error}</p>}
+
+      {anotaciones === null ? (
+        !error && <p className="texto-suave">Cargando…</p>
+      ) : anotaciones.length === 0 ? (
+        <p className="texto-suave">Todavía no hay anotaciones.</p>
+      ) : (
+        <>
+          <div className="lista-encabezado">
+            <span className="texto-suave">
+              {filtradas.length} {filtradas.length === 1 ? "anotación" : "anotaciones"}
+            </span>
+            <select
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value as TipoAnotacion | "")}
+              aria-label="Filtrar por tipo"
+            >
+              <option value="">Todos los tipos</option>
+              {Object.entries(ETIQUETAS_TIPO_ANOTACION).map(([valor, etiqueta]) => (
+                <option key={valor} value={valor}>
+                  {etiqueta}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <ul className="lista-anotaciones">
+            {visibles.map((anotacion) =>
+              editandoId === anotacion.id ? (
+                <li key={anotacion.id} className="anotacion">
+                  <FormularioAnotacion
+                    inicial={datosDesdeAnotacion(anotacion)}
+                    textoBoton="Guardar cambios"
+                    onGuardar={(datos) => actualizar(anotacion.id, datos)}
+                    onCancelar={() => setEditandoId(null)}
+                  />
+                </li>
+              ) : (
+                <li key={anotacion.id} className="anotacion">
+                  <div className="anotacion-cabecera">
+                    <span className="insignia">{ETIQUETAS_TIPO_ANOTACION[anotacion.tipo]}</span>
+                    <span className="texto-suave">{formatearFecha(anotacion.fecha)}</span>
+                    <div className="anotacion-acciones">
+                      <button type="button" className="boton-link" onClick={() => setEditandoId(anotacion.id)}>
+                        Editar
+                      </button>
+                      <button type="button" className="boton-link peligro" onClick={() => eliminar(anotacion)}>
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                  <p className="texto-largo">{anotacion.detalle}</p>
+                  {anotacion.motivo && <p className="texto-suave texto-largo">Motivo: {anotacion.motivo}</p>}
+                </li>
+              ),
+            )}
+          </ul>
+
+          {filtradas.length === 0 && <p className="texto-suave">No hay anotaciones de ese tipo.</p>}
+
+          {filtradas.length > CANTIDAD_INICIAL && (
+            <button type="button" className="boton-secundario boton-desplegar" onClick={() => setVerTodas(!verTodas)}>
+              {verTodas ? "Ver solo las últimas" : `Ver todas (${filtradas.length - CANTIDAD_INICIAL} más)`}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

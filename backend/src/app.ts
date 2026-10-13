@@ -5,6 +5,7 @@ import { manejarErrores, rutaNoEncontrada } from "./middlewares/errores";
 import { requiereSesion } from "./middlewares/requiereSesion";
 import { z } from "zod";
 import { alumnosRouter } from "./modulos/alumnos/alumnos.routes";
+import { anotacionesRouter } from "./modulos/anotaciones/anotaciones.routes";
 import { authRouter } from "./modulos/auth/auth.routes";
 
 // Mensajes de error de Zod en español para los casos sin mensaje propio.
@@ -29,7 +30,8 @@ app.use("/api/auth", authRouter);
 app.use("/api", requiereSesion);
 
 app.use("/api/alumnos", alumnosRouter);
-// (próximos módulos: anotaciones, evaluaciones, pagos, panel)
+app.use("/api", anotacionesRouter);
+// (próximos módulos: evaluaciones, pagos, panel)
 
 app.use("/api", rutaNoEncontrada);
 app.use(manejarErrores);
