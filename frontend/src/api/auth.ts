@@ -1,0 +1,17 @@
+import { pedir } from "./cliente";
+
+export interface Usuario {
+  id: number;
+  email: string;
+  nombre: string;
+  rol: "ADMIN";
+}
+
+export const authApi = {
+  login: (email: string, password: string) =>
+    pedir<{ usuario: Usuario }>("/auth/login", { metodo: "POST", datos: { email, password } }),
+
+  logout: () => pedir<void>("/auth/logout", { metodo: "POST" }),
+
+  yo: () => pedir<{ usuario: Usuario }>("/auth/yo"),
+};

@@ -1,0 +1,253 @@
+// Modelo de datos del sistema de gestión de entrenamiento.
+// Detalle y decisiones: docs/propuesta-etapa1.md
+//
+// Convenciones:
+// - Montos en Decimal(12,2), nunca float.
+// - Fechas de calendario con @db.Date (sin hora) para que la zona horaria no corra el día.
+// - Los alumnos no se borran: se marcan con activo = false.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Rol {
+  ADMIN
+}
+
+enum Perfil {
+  DEPORTIVO
+  SALUD
+  RECUPERACION
+}
+
+enum TipoAnotacion {
+  OBSERVACION
+  CORRECCION_TECNICA
+  CAMBIO_EJERCICIO
+  CARGA
+  MOLESTIA
+  OTRO
+}
+
+enum CategoriaPrueba {
+  FUERZA
+  POTENCIA
+  VELOCIDAD
+  MOVILIDAD
+  RESISTENCIA
+}
+
+enum Lado {
+  IZQ
+  DER
+}
+
+enum OrigenResultado {
+  PLATAFORMA_FUERZA
+  MYJUMP
+  MANUAL
+}
+
+enum Modalidad {
+  PRESENCIAL
+  SEMIPRESENCIAL
+  ONLINE
+}
+
+enum MedioPago {
+  EFECTIVO
+  TRANSFERENCIA
+}
+
+// ---------- Usuario y sesión ----------
+
+model Usuario {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  nombre        String
+  passwordHash  String
+  rol           Rol      @default(ADMIN)
+  sesiones      Sesion[]
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
+// En la base se guarda solo el hash del token; el token viaja en una cookie httpOnly.
+model Sesion {
+  id            Int      @id @default(autoincrement())
+  usuarioId     Int
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tokenHash     String   @unique
+  expiraEn      DateTime
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([usuarioId])
+}
+
+// ---------- Alumnos ----------
+
+model Alumno {
+  id                     Int      @id @default(autoincrement())
+  nombre                 String
+  apellido               String
+  dni                    String   @unique
+  fechaNacimiento        DateTime @db.Date
+  profesion              String
+  telefono               String
+  email                  String?
+  perfil                 Perfil
+  detallePerfil          String?
+  antecedentesDeportivos String?
+  lesiones               String?
+  molestias              String?
+  restricciones          String?
+  actividadLaboral       String?
+  vidaCotidiana          String?
+  planId                 Int?
+  plan                   Plan?    @relation(fields: [planId], references: [id])
+  activo                 Boolean  @default(true)
+  creadoEn               DateTime @default(now())
+  actualizadoEn          DateTime @updatedAt
+
+  cambios      CambioAlumno[]
+  anotaciones  Anotacion[]
+  evaluaciones Evaluacion[]
+  cuotas       Cuota[]
+  pagos        Pago[]
+
+  @@index([apellido, nombre])
+}
+
+// Historial de cambios de la ficha: una fila por campo modificado.
+// Es un registro que no se edita, por eso "fecha" cumple el rol de creadoEn.
+model CambioAlumno {
+  id            Int      @id @default(autoincrement())
+  alumnoId      Int
+  alumno        Alumno   @relation(fields: [alumnoId], references: [id])
+  campo         String
+  valorAnterior String?
+  valorNuevo    String?
+  fecha         DateTime @default(now())
+
+  @@index([alumnoId, fecha])
+}
+
+// ---------- Anotaciones ----------
+
+model Anotacion {
+  id            Int           @id @default(autoincrement())
+  alumnoId      Int
+  alumno        Alumno        @relation(fields: [alumnoId], references: [id])
+  fecha         DateTime      @db.Date
+  tipo          TipoAnotacion
+  detalle       String
+  motivo        String?
+  creadoEn      DateTime      @default(now())
+  actualizadoEn DateTime      @updatedAt
+
+  @@index([alumnoId, fecha])
+}
+
+// ---------- Evaluaciones ----------
+
+// Catálogo de pruebas: permite comparar el mismo test a lo largo del tiempo.
+model Prueba {
+  id            Int                   @id @default(autoincrement())
+  nombre        String                @unique
+  categoria     CategoriaPrueba
+  unidad        String
+  activa        Boolean               @default(true)
+  resultados    ResultadoEvaluacion[]
+  creadoEn      DateTime              @default(now())
+  actualizadoEn DateTime              @updatedAt
+}
+
+model Evaluacion {
+  id            Int                   @id @default(autoincrement())
+  alumnoId      Int
+  alumno        Alumno                @relation(fields: [alumnoId], references: [id])
+  fecha         DateTime              @db.Date
+  observaciones String?
+  resultados    ResultadoEvaluacion[]
+  creadoEn      DateTime              @default(now())
+  actualizadoEn DateTime              @updatedAt
+
+  @@index([alumnoId, fecha])
+}
+
+model ResultadoEvaluacion {
+  id            Int             @id @default(autoincrement())
+  evaluacionId  Int
+  evaluacion    Evaluacion      @relation(fields: [evaluacionId], references: [id], onDelete: Cascade)
+  pruebaId      Int
+  prueba        Prueba          @relation(fields: [pruebaId], references: [id])
+  valor         Decimal         @db.Decimal(10, 2)
+  unidad        String
+  lado          Lado?
+  origen        OrigenResultado @default(MANUAL)
+  observacion   String?
+  creadoEn      DateTime        @default(now())
+  actualizadoEn DateTime        @updatedAt
+
+  @@index([evaluacionId])
+  @@index([pruebaId])
+}
+
+// ---------- Planes y pagos ----------
+
+model Plan {
+  id            Int       @id @default(autoincrement())
+  nombre        String    @unique
+  modalidad     Modalidad
+  precioMensual Decimal   @db.Decimal(12, 2)
+  activo        Boolean   @default(true)
+  alumnos       Alumno[]
+  cuotas        Cuota[]
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+}
+
+// Se crea al registrar un pago: cubre desde la fecha de pago hasta un mes después.
+// "importe" es lo que Agustín decide cobrar (por defecto, el precio del plan).
+model Cuota {
+  id            Int      @id @default(autoincrement())
+  alumnoId      Int
+  alumno        Alumno   @relation(fields: [alumnoId], references: [id])
+  planId        Int
+  plan          Plan     @relation(fields: [planId], references: [id])
+  desde         DateTime @db.Date
+  vence         DateTime @db.Date
+  importe       Decimal  @db.Decimal(12, 2)
+  pagos         Pago[]
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([alumnoId, vence])
+}
+
+// Si cuotaId es null, es un pago por otro concepto (no cuota mensual).
+model Pago {
+  id            Int       @id @default(autoincrement())
+  alumnoId      Int
+  alumno        Alumno    @relation(fields: [alumnoId], references: [id])
+  cuotaId       Int?
+  cuota         Cuota?    @relation(fields: [cuotaId], references: [id])
+  fecha         DateTime  @db.Date
+  importe       Decimal   @db.Decimal(12, 2)
+  concepto      String
+  medio         MedioPago
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  @@index([alumnoId])
+  @@index([cuotaId])
+  @@index([fecha])
+}

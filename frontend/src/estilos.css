@@ -1,0 +1,162 @@
+:root {
+  --color-texto: #1f2933;
+  --color-texto-suave: #616e7c;
+  --color-fondo: #f5f7fa;
+  --color-superficie: #ffffff;
+  --color-borde: #d9e2ec;
+  --color-primario: #1d4ed8;
+  --color-primario-hover: #1e40af;
+  --color-error: #b91c1c;
+  --color-error-fondo: #fef2f2;
+  --radio: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--color-texto);
+  background: var(--color-fondo);
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.contenedor {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.texto-suave {
+  color: var(--color-texto-suave);
+  margin: 0 0 16px;
+}
+
+.tarjeta {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: 24px;
+}
+
+/* ---------- Formularios ---------- */
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.campo input {
+  padding: 10px 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  font: inherit;
+  font-weight: 400;
+}
+
+.campo input:focus {
+  outline: 2px solid var(--color-primario);
+  outline-offset: -1px;
+}
+
+.mensaje-error {
+  color: var(--color-error);
+  background: var(--color-error-fondo);
+  border-radius: var(--radio);
+  padding: 8px 12px;
+  margin: 0 0 16px;
+}
+
+/* ---------- Botones ---------- */
+
+.boton,
+.boton-secundario {
+  font: inherit;
+  border-radius: var(--radio);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.boton {
+  background: var(--color-primario);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+}
+
+.boton:hover:not(:disabled) {
+  background: var(--color-primario-hover);
+}
+
+.boton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.boton-secundario {
+  background: transparent;
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+  padding: 6px 12px;
+}
+
+.boton-secundario:hover {
+  background: var(--color-fondo);
+}
+
+/* ---------- Login ---------- */
+
+.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.login-formulario {
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-formulario .boton {
+  width: 100%;
+}
+
+/* ---------- Encabezado ---------- */
+
+.encabezado {
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.encabezado-contenido {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.marca {
+  font-weight: 700;
+  color: var(--color-texto);
+  text-decoration: none;
+}
+
+.encabezado-usuario {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
