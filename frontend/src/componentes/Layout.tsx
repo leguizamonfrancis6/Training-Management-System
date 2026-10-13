@@ -1,7 +1,7 @@
-import { Link, Outlet } from "react-router";
+import { Link, NavLink, Outlet } from "react-router";
 import { useSesion } from "./Sesion";
 
-// Estructura común de las pantallas internas: encabezado + contenido.
+// Estructura común de las pantallas internas: encabezado con menú + contenido.
 export default function Layout() {
   const { usuario, cerrarSesion } = useSesion();
 
@@ -12,6 +12,12 @@ export default function Layout() {
           <Link to="/" className="marca">
             Gestión de entrenamiento
           </Link>
+          <nav className="menu">
+            <NavLink to="/" end>
+              Inicio
+            </NavLink>
+            <NavLink to="/alumnos">Alumnos</NavLink>
+          </nav>
           <div className="encabezado-usuario">
             <span>{usuario?.nombre}</span>
             <button type="button" className="boton-secundario" onClick={() => cerrarSesion()}>

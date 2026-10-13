@@ -2,6 +2,9 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import Layout from "./componentes/Layout";
 import RutaProtegida from "./componentes/RutaProtegida";
 import { ProveedorSesion } from "./componentes/Sesion";
+import AlumnoFicha from "./paginas/AlumnoFicha";
+import AlumnoFormulario from "./paginas/AlumnoFormulario";
+import Alumnos from "./paginas/Alumnos";
 import Inicio from "./paginas/Inicio";
 import Login from "./paginas/Login";
 
@@ -16,6 +19,10 @@ export default function App() {
           <Route element={<RutaProtegida />}>
             <Route element={<Layout />}>
               <Route index element={<Inicio />} />
+              <Route path="alumnos" element={<Alumnos />} />
+              <Route path="alumnos/nuevo" element={<AlumnoFormulario />} />
+              <Route path="alumnos/:id" element={<AlumnoFicha />} />
+              <Route path="alumnos/:id/editar" element={<AlumnoFormulario />} />
             </Route>
           </Route>
 

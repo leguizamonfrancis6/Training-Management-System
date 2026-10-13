@@ -20,7 +20,7 @@ Token aleatorio en cookie httpOnly + SameSite; en la base solo el hash. Logout =
 ### Alumnos
 | Entidad | Campos |
 |---|---|
-| Alumno | id, nombre, apellido, dni (único), fechaNacimiento, profesion, telefono, email?, perfil (`DEPORTIVO` \| `SALUD` \| `RECUPERACION`), detallePerfil?, antecedentesDeportivos?, lesiones?, molestias?, restricciones?, actividadLaboral?, vidaCotidiana?, planId? → Plan, activo |
+| Alumno | id, nombre, apellido, dni (único), fechaNacimiento, profesion, telefono, email?, perfil (`DEPORTIVO` \| `SALUD` \| `RECUPERACION`), detallePerfil?, antecedentesDeportivos?, lesiones?, molestias? (en pantalla "Molestias/contracturas"), actividadLaboral?, otrosDatos?, planId? → Plan, activo |
 | CambioAlumno | id, alumnoId, campo, valorAnterior, valorNuevo, fecha |
 
 - La edad se calcula, no se guarda.

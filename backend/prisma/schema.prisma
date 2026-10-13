@@ -107,10 +107,9 @@ model Alumno {
   detallePerfil          String?
   antecedentesDeportivos String?
   lesiones               String?
-  molestias              String?
-  restricciones          String?
+  molestias              String? // en pantalla: "Molestias/contracturas"
   actividadLaboral       String?
-  vidaCotidiana          String?
+  otrosDatos             String?
   planId                 Int?
   plan                   Plan?    @relation(fields: [planId], references: [id])
   activo                 Boolean  @default(true)

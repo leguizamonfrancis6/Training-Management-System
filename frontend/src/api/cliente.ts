@@ -3,10 +3,13 @@
 
 export class ErrorApi extends Error {
   estado: number;
+  // Errores de validación por campo, ej.: { dni: ["El DNI debe tener 7 u 8 dígitos"] }
+  campos: Record<string, string[]>;
 
-  constructor(mensaje: string, estado: number) {
+  constructor(mensaje: string, estado: number, campos: Record<string, string[]> = {}) {
     super(mensaje);
     this.estado = estado;
+    this.campos = campos;
   }
 }
 
@@ -41,7 +44,7 @@ export async function pedir<T>(ruta: string, opciones: Opciones = {}): Promise<T
 
   const cuerpo = await respuesta.json().catch(() => null);
   if (!respuesta.ok) {
-    throw new ErrorApi(cuerpo?.error ?? "No se pudo conectar con el servidor", respuesta.status);
+    throw new ErrorApi(cuerpo?.error ?? "No se pudo conectar con el servidor", respuesta.status, cuerpo?.campos);
   }
   return cuerpo as T;
 }

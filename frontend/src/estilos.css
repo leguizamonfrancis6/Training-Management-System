@@ -55,17 +55,53 @@ h1 {
   font-weight: 500;
 }
 
-.campo input {
+.campo input,
+.campo select,
+.campo textarea,
+.filtros input,
+.filtros select {
   padding: 10px 12px;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio);
   font: inherit;
   font-weight: 400;
+  background: var(--color-superficie);
+  color: inherit;
+  width: 100%;
 }
 
-.campo input:focus {
+.campo textarea {
+  resize: vertical;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus,
+.filtros input:focus,
+.filtros select:focus {
   outline: 2px solid var(--color-primario);
   outline-offset: -1px;
+}
+
+.obligatorio {
+  color: var(--color-error);
+}
+
+.ayuda {
+  color: var(--color-texto-suave);
+  font-weight: 400;
+}
+
+.error-campo {
+  color: var(--color-error);
+  font-weight: 400;
+}
+
+/* Dos columnas en pantallas anchas, una en angostas. */
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0 16px;
 }
 
 .mensaje-error {
@@ -80,10 +116,13 @@ h1 {
 
 .boton,
 .boton-secundario {
+  display: inline-block;
   font: inherit;
   border-radius: var(--radio);
   padding: 10px 16px;
   cursor: pointer;
+  text-decoration: none;
+  text-align: center;
 }
 
 .boton {
@@ -103,14 +142,22 @@ h1 {
 }
 
 .boton-secundario {
-  background: transparent;
+  background: var(--color-superficie);
   color: var(--color-texto);
   border: 1px solid var(--color-borde);
-  padding: 6px 12px;
 }
 
-.boton-secundario:hover {
+.boton-secundario:hover:not(:disabled) {
   background: var(--color-fondo);
+}
+
+.boton-secundario:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.encabezado .boton-secundario {
+  padding: 6px 12px;
 }
 
 /* ---------- Login ---------- */
@@ -159,4 +206,169 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.menu {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.menu a {
+  color: var(--color-texto-suave);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: var(--radio);
+}
+
+.menu a:hover {
+  background: var(--color-fondo);
+}
+
+/* NavLink agrega la clase "active" al link de la página actual. */
+.menu a.active {
+  color: var(--color-primario);
+  font-weight: 600;
+}
+
+/* ---------- Páginas ---------- */
+
+a {
+  color: var(--color-primario);
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+}
+
+.pagina-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.volver {
+  display: inline-block;
+  margin-bottom: 12px;
+  text-decoration: none;
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.seccion {
+  margin-bottom: 16px;
+}
+
+.filtros {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filtros select {
+  width: auto;
+}
+
+.insignias {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.insignia {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto-suave);
+}
+
+.insignia-ok {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #047857;
+}
+
+/* ---------- Tablas ---------- */
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-superficie);
+  margin-bottom: 8px;
+}
+
+.tabla th,
+.tabla td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-borde);
+  vertical-align: top;
+}
+
+.tabla th {
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+  font-weight: 600;
+}
+
+.sin-salto {
+  white-space: nowrap;
+}
+
+.texto-largo {
+  white-space: pre-line;
+}
+
+/* ---------- Ficha (lista de datos) ---------- */
+
+.datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+
+.datos-texto {
+  grid-template-columns: 1fr;
+}
+
+.dato dt {
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+  margin-bottom: 2px;
+}
+
+.dato dd {
+  margin: 0;
+  white-space: pre-line;
+}
+
+@media (max-width: 640px) {
+  .encabezado-contenido {
+    flex-wrap: wrap;
+  }
+
+  .filtros {
+    grid-template-columns: 1fr;
+  }
+
+  .filtros select {
+    width: 100%;
+  }
 }

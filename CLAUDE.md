@@ -12,7 +12,10 @@ El desarrollador es estudiante de la Tecnicatura en TI (UTN): explicar brevement
 ## Estado actual
 - Etapa 1 confirmada el 13/10/2026 (ver [docs/propuesta-etapa1.md](docs/propuesta-etapa1.md), sección "Decisiones tomadas").
 - Etapa 2 terminada y probada el 13/10/2026: monorepo, `.gitignore`, `git init`, schema Prisma, migración `inicial` aplicada, seed del catálogo de pruebas, esqueleto de API (`/api/salud`) y de frontend, README. 
-- Módulo login escrito y probado el 13/10/2026 (API: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/yo`; todo `/api` salvo `salud` y `auth` exige sesión; sesión de 30 días; usuario admin con `npm run crear-admin`). Pendiente: que el usuario cree su admin y lo pruebe en el navegador, y los commits (Git sin user.name/user.email configurados). Próximo módulo: alumnos (esperar confirmación).
+- Módulo login escrito y probado el 13/10/2026 (API: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/yo`; todo `/api` salvo `salud` y `auth` exige sesión; sesión de 30 días; usuario admin con `npm run crear-admin`). Commit inicial `1f246cf` (etapa 2 + login). Git configurado en el repo como "Soft Gestión Entrenamiento" <leguizamonfrancis6@gmail.com>. Login probado por el usuario.
+- Módulo alumnos escrito y probado (API) el 13/10/2026: `GET/POST /api/alumnos`, `GET/PUT /api/alumnos/:id`, `PATCH /api/alumnos/:id/estado`, `GET /api/alumnos/:id/historial`. Búsqueda sin tildes hecha en memoria (pocos cientos de alumnos). Teléfono guardado como 10 dígitos. El plan se asigna en el módulo pagos. La ficha (`AlumnoFicha.tsx`) debe ir sumando secciones de anotaciones, evaluaciones y pagos. Pendiente: prueba del usuario en el navegador y commit. Próximo: anotaciones.
+- Al probar con curl desde Git Bash, mandar el JSON desde un archivo UTF-8 (`--data-binary @archivo`): con `-d '...'` los acentos llegan mal.
+- Errores del backend: `ErrorHttp(estado, mensaje)` y `leerId()` en `lib/errores.ts`; `manejarErrores` también convierte `ZodError` en 400. Zod configurado en español (`z.config(z.locales.es())`). Fechas: `lib/fechas.ts` (back) y `utils/formato.ts` (front).
 - Entorno: Node 24 LTS, PostgreSQL 17 nativo (servicio `postgresql-x64-17`, base `entrenamiento`), Git. Sin Docker. En PowerShell usar `npm.cmd`/`npx.cmd` (`npm.ps1` puede estar bloqueado por la política de ejecución). npm 11.19 bloquea scripts de instalación no aprobados (Prisma, esbuild); hasta ahora no causó problemas.
 - Prisma fijado en la versión 6 (`url` en el schema, `prisma-client-js`); la 7 exige adaptadores y `prisma.config.ts`, más complejo para este proyecto.
 - `bcryptjs` (bcrypt en JS puro, sin compilación nativa en Windows). `react-router` fijado en v7 (la v8 es nueva y no se conoce bien su API).
@@ -27,7 +30,7 @@ El desarrollador es estudiante de la Tecnicatura en TI (UTN): explicar brevement
 - Monorepo con carpetas `/backend` y `/frontend`. PostgreSQL nativo instalado en Windows (sin Docker).
 
 ## Convenciones
-- Interfaz y mensajes en español (Argentina). Fechas en formato dd/mm/aaaa; montos en pesos ($ 25.000,00).
+- Interfaz y mensajes en español (Argentina). Fechas en formato dd-mm-aaaa (con guiones; con hora: dd-mm-aaaa hh:mm); montos en pesos ($ 25.000,00).
 - Nombres de dominio en español (`Alumno`, `Pago`, `fechaNacimiento`).
 - Montos en `Decimal(12,2)`, nunca float. Fechas de calendario como `@db.Date` (sin hora).
 - Los alumnos nunca se borran: se marcan inactivos.

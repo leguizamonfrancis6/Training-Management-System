@@ -3,7 +3,12 @@ import cookieParser from "cookie-parser";
 import { prisma } from "./lib/prisma";
 import { manejarErrores, rutaNoEncontrada } from "./middlewares/errores";
 import { requiereSesion } from "./middlewares/requiereSesion";
+import { z } from "zod";
+import { alumnosRouter } from "./modulos/alumnos/alumnos.routes";
 import { authRouter } from "./modulos/auth/auth.routes";
+
+// Mensajes de error de Zod en español para los casos sin mensaje propio.
+z.config(z.locales.es());
 
 export const app = express();
 
@@ -23,7 +28,8 @@ app.use("/api/auth", authRouter);
 // ---------- Rutas protegidas: de acá para abajo hace falta sesión ----------
 app.use("/api", requiereSesion);
 
-// (acá se van a montar los módulos: alumnos, anotaciones, evaluaciones, pagos, panel)
+app.use("/api/alumnos", alumnosRouter);
+// (próximos módulos: anotaciones, evaluaciones, pagos, panel)
 
 app.use("/api", rutaNoEncontrada);
 app.use(manejarErrores);
