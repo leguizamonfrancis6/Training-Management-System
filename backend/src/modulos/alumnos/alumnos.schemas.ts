@@ -53,7 +53,6 @@ export const esquemaAlumno = z.object({
   profesion: textoObligatorio("La profesión es obligatoria"),
   perfil: z.enum(Perfil, { error: "Elegí un perfil" }),
   detallePerfil: textoLargo,
-  antecedentesDeportivos: textoLargo,
   lesiones: textoLargo,
   molestias: textoLargo,
   actividadLaboral: textoLargo,
@@ -67,7 +66,7 @@ export const esquemaEstado = z.object({
 });
 
 export const esquemaPlanAlumno = z.object({
-  planId: z.number({ error: "Elegí un plan" }).int().positive().nullable(),
+  planId: z.number({ error: "Elegí una membresía" }).int().positive().nullable(),
 });
 
 // Filtros del listado: llegan por query string (?buscar=...&estado=...&perfil=...).

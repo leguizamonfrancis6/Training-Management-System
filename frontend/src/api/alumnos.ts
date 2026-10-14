@@ -21,7 +21,6 @@ export interface Alumno extends AlumnoResumen {
   email: string | null;
   profesion: string;
   detallePerfil: string | null;
-  antecedentesDeportivos: string | null;
   lesiones: string | null;
   molestias: string | null;
   actividadLaboral: string | null;
@@ -49,7 +48,6 @@ export interface DatosAlumno {
   profesion: string;
   perfil: Perfil | "";
   detallePerfil: string;
-  antecedentesDeportivos: string;
   lesiones: string;
   molestias: string;
   actividadLaboral: string;

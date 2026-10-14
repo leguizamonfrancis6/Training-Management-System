@@ -1,9 +1,10 @@
-import { Link, NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { useSesion } from "./Sesion";
 
 // Estructura común de las pantallas internas: encabezado con menú + contenido.
 export default function Layout() {
   const { usuario, cerrarSesion } = useSesion();
+  const { pathname } = useLocation();
 
   return (
     <>
@@ -17,10 +18,12 @@ export default function Layout() {
               Inicio
             </NavLink>
             <NavLink to="/alumnos">Alumnos</NavLink>
-            <NavLink to="/pagos">Pagos</NavLink>
-            <NavLink to="/ingresos">Ingresos</NavLink>
-            <NavLink to="/planes">Planes</NavLink>
-            <NavLink to="/pruebas">Evaluaciones</NavLink>
+            {/* Ingresos no está en el menú: se abre desde Pagos, que queda resaltado */}
+            <NavLink to="/pagos" className={() => (/^\/(pagos|ingresos)/.test(pathname) ? "active" : "")}>
+              Pagos
+            </NavLink>
+            <NavLink to="/rutinas">Rutinas</NavLink>
+            <NavLink to="/evaluaciones">Evaluaciones</NavLink>
           </nav>
           <div className="encabezado-usuario">
             <span>{usuario?.nombre}</span>

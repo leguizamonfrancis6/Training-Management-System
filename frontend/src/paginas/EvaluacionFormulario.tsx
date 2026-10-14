@@ -36,6 +36,7 @@ export default function EvaluacionFormulario() {
   const [pruebas, setPruebas] = useState<Prueba[]>([]);
   const [fecha, setFecha] = useState(hoyComoTexto());
   const [observaciones, setObservaciones] = useState("");
+  const [numero, setNumero] = useState<number | null>(null); // "Evaluación n°" (solo al editar)
   const [filas, setFilas] = useState<FilaResultado[]>([filaVacia()]);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -51,6 +52,7 @@ export default function EvaluacionFormulario() {
           setAlumnoId(evaluacion.alumnoId);
           setFecha(evaluacion.fecha.slice(0, 10));
           setObservaciones(evaluacion.observaciones ?? "");
+          setNumero(evaluacion.idEvaluacion);
           setFilas(
             evaluacion.resultados.map((resultado) => ({
               ...filaVacia(),
@@ -75,7 +77,10 @@ export default function EvaluacionFormulario() {
         const nueva = { ...fila, [campo]: valor };
         // Al elegir la prueba se completa su unidad (se puede cambiar después).
         if (campo === "pruebaId") {
-          nueva.unidad = pruebas.find((prueba) => String(prueba.id) === valor)?.unidad ?? "";
+          const prueba = pruebas.find((p) => String(p.id) === valor);
+          nueva.unidad = prueba?.unidad ?? "";
+          // El lado solo existe en las pruebas que se miden por lado.
+          if (!prueba?.porLado) nueva.lado = "";
         }
         return nueva;
       }),
@@ -112,7 +117,8 @@ export default function EvaluacionFormulario() {
       } else {
         await evaluacionesApi.crear(alumnoId, datos);
       }
-      navigate(`/alumnos/${alumnoId}/evaluaciones`);
+      // Al editar se vuelve al detalle de la evaluación; al crear, a la lista de evaluaciones del alumno.
+      navigate(evaluacionId ? `/evaluaciones/${evaluacionId}` : `/alumnos/${alumnoId}/evaluaciones`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar");
       if (err instanceof ErrorApi) setErrores(err.campos);
@@ -126,7 +132,12 @@ export default function EvaluacionFormulario() {
     return <p className="texto-suave">Cargando…</p>;
   }
 
-  const volverA = alumnoId ? `/alumnos/${alumnoId}/evaluaciones` : "/alumnos";
+  // "Volver" y "Cancelar": al editar, al detalle de la evaluación; al crear, a las evaluaciones del alumno.
+  const volverA = evaluacionId
+    ? `/evaluaciones/${evaluacionId}`
+    : alumnoId
+      ? `/alumnos/${alumnoId}/evaluaciones`
+      : "/alumnos";
   const categorias = Object.keys(ETIQUETAS_CATEGORIA) as CategoriaPrueba[];
 
   return (
@@ -134,7 +145,7 @@ export default function EvaluacionFormulario() {
       <Link to={volverA} className="volver">
         ← Volver
       </Link>
-      <h1>{evaluacionId ? "Editar evaluación" : "Nueva evaluación"}</h1>
+      <h1>{evaluacionId ? `Editar evaluación n° ${numero ?? ""}` : "Nueva evaluación"}</h1>
 
       {error && <p className="mensaje-error">{error}</p>}
 
@@ -153,7 +164,7 @@ export default function EvaluacionFormulario() {
         <div className="tarjeta seccion">
           <h2>Resultados</h2>
           <p className="texto-suave">
-            Una fila por prueba. Para pruebas de un solo lado del cuerpo, cargá una fila por cada lado.
+            Una fila por prueba. En las pruebas que se miden por lado, cargá una fila por cada lado.
           </p>
           {errores.resultados && <p className="mensaje-error">{errores.resultados.join(". ")}</p>}
 
@@ -182,16 +193,19 @@ export default function EvaluacionFormulario() {
                       })}
                     </select>
                   </Campo>
-                  <Campo etiqueta="Lado" errores={erroresDe("lado")}>
-                    <select value={fila.lado} onChange={(e) => cambiarFila(fila.clave, "lado", e.target.value)}>
-                      <option value="">—</option>
-                      {Object.entries(ETIQUETAS_LADO).map(([valor, etiqueta]) => (
-                        <option key={valor} value={valor}>
-                          {etiqueta}
-                        </option>
-                      ))}
-                    </select>
-                  </Campo>
+                  {/* "Lado" solo aparece si la prueba elegida se mide por lado */}
+                  {(pruebas.find((p) => String(p.id) === fila.pruebaId)?.porLado || fila.lado) && (
+                    <Campo etiqueta="Lado" errores={erroresDe("lado")}>
+                      <select value={fila.lado} onChange={(e) => cambiarFila(fila.clave, "lado", e.target.value)}>
+                        <option value="">—</option>
+                        {Object.entries(ETIQUETAS_LADO).map(([valor, etiqueta]) => (
+                          <option key={valor} value={valor}>
+                            {etiqueta}
+                          </option>
+                        ))}
+                      </select>
+                    </Campo>
+                  )}
                   <Campo etiqueta="Valor" obligatorio errores={erroresDe("valor")}>
                     <input
                       inputMode="decimal"

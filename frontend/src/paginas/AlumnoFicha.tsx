@@ -4,8 +4,13 @@ import { alumnosApi, type Alumno, type CambioAlumno } from "../api/alumnos";
 import AnotacionesAlumno from "../componentes/AnotacionesAlumno";
 import EvaluacionesAlumno from "../componentes/EvaluacionesAlumno";
 import PagosAlumno from "../componentes/PagosAlumno";
+import RutinasFicha from "../componentes/RutinasFicha";
 import { ETIQUETAS_CAMPO, ETIQUETAS_PERFIL, formatearValorCambio } from "../utils/alumnos";
 import { calcularEdad, formatearFecha, formatearFechaHora } from "../utils/formato";
+import Desplegable from "../componentes/Desplegable";
+
+// Cantidad de cambios del historial que se ven sin desplegar la lista.
+const CAMBIOS_INICIALES = 4;
 
 function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
@@ -22,6 +27,7 @@ export default function AlumnoFicha() {
   const [historial, setHistorial] = useState<CambioAlumno[]>([]);
   const [error, setError] = useState("");
   const [procesando, setProcesando] = useState(false);
+  const [verTodoHistorial, setVerTodoHistorial] = useState(false);
 
   const cargar = useCallback(async () => {
     try {
@@ -98,8 +104,7 @@ export default function AlumnoFicha() {
 
       {error && <p className="mensaje-error">{error}</p>}
 
-      <div className="tarjeta seccion">
-        <h2>Datos personales</h2>
+      <Desplegable titulo="Datos personales">
         <dl className="datos">
           <Dato etiqueta="DNI">{alumno.dni}</Dato>
           <Dato etiqueta="Fecha de nacimiento">
@@ -109,63 +114,67 @@ export default function AlumnoFicha() {
           <Dato etiqueta="Email">{alumno.email}</Dato>
           <Dato etiqueta="Profesión">{alumno.profesion}</Dato>
           <Dato etiqueta="Alta en el sistema">{formatearFecha(alumno.creadoEn)}</Dato>
-        </dl>
-      </div>
-
-      <div className="tarjeta seccion">
-        <h2>Perfil</h2>
-        <dl className="datos">
           <Dato etiqueta="Perfil">{ETIQUETAS_PERFIL[alumno.perfil]}</Dato>
           <Dato etiqueta="Detalle del perfil">{alumno.detallePerfil}</Dato>
         </dl>
-      </div>
+      </Desplegable>
 
-      <div className="tarjeta seccion">
-        <h2>Antecedentes y salud</h2>
+      <Desplegable titulo="Antecedentes y salud">
         <dl className="datos datos-texto">
-          <Dato etiqueta="Antecedentes deportivos">{alumno.antecedentesDeportivos}</Dato>
           <Dato etiqueta="Lesiones">{alumno.lesiones}</Dato>
           <Dato etiqueta="Molestias/contracturas">{alumno.molestias}</Dato>
           <Dato etiqueta="Actividad laboral">{alumno.actividadLaboral}</Dato>
           <Dato etiqueta="Otros datos">{alumno.otrosDatos}</Dato>
         </dl>
-      </div>
+      </Desplegable>
 
       <AnotacionesAlumno alumnoId={alumno.id} />
 
       <EvaluacionesAlumno alumnoId={alumno.id} />
 
-      <PagosAlumno alumno={alumno} onCambioPlan={cargar} />
+      <RutinasFicha alumnoId={alumno.id} />
 
-      <div className="tarjeta seccion">
-        <h2>Historial de cambios</h2>
+      <PagosAlumno alumno={alumno} onCambio={cargar} />
+
+      <Desplegable titulo="Historial de cambios">
         {historial.length === 0 ? (
           <p className="texto-suave">Sin cambios registrados desde el alta.</p>
         ) : (
-          <div className="tabla-contenedor">
-            <table className="tabla">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Campo</th>
-                  <th>Antes</th>
-                  <th>Después</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historial.map((cambio) => (
-                  <tr key={cambio.id}>
-                    <td className="sin-salto">{formatearFechaHora(cambio.fecha)}</td>
-                    <td>{ETIQUETAS_CAMPO[cambio.campo] ?? cambio.campo}</td>
-                    <td className="texto-largo">{formatearValorCambio(cambio.campo, cambio.valorAnterior)}</td>
-                    <td className="texto-largo">{formatearValorCambio(cambio.campo, cambio.valorNuevo)}</td>
+          <>
+            <div className="tabla-contenedor">
+              <table className="tabla">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Campo</th>
+                    <th>Antes</th>
+                    <th>Después</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {(verTodoHistorial ? historial : historial.slice(0, CAMBIOS_INICIALES)).map((cambio) => (
+                    <tr key={cambio.id}>
+                      <td className="sin-salto">{formatearFechaHora(cambio.fecha)}</td>
+                      <td>{ETIQUETAS_CAMPO[cambio.campo] ?? cambio.campo}</td>
+                      <td className="texto-largo">{formatearValorCambio(cambio.campo, cambio.valorAnterior)}</td>
+                      <td className="texto-largo">{formatearValorCambio(cambio.campo, cambio.valorNuevo)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {historial.length > CAMBIOS_INICIALES && (
+              <button
+                type="button"
+                className="boton-secundario boton-desplegar"
+                onClick={() => setVerTodoHistorial(!verTodoHistorial)}
+              >
+                {verTodoHistorial ? "Ver solo los últimos" : `Ver todos (${historial.length - CAMBIOS_INICIALES} más)`}
+              </button>
+            )}
+          </>
         )}
-      </div>
+      </Desplegable>
     </section>
   );
 }

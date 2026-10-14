@@ -1,0 +1,72 @@
+import { ErrorApi, pedir } from "./cliente";
+
+export type TipoBloque = "MICROCICLOS_2_SEMANAS" | "MICROCICLOS_1_SEMANA";
+
+export interface Rutina {
+  id: number;
+  alumnoId: number;
+  tipo: TipoBloque;
+  objetivo: string | null; // copiados de la planilla, para mostrar en listas
+  desde: string | null;
+  hasta: string | null;
+  creadoEn: string; // ISO
+  actualizadoEn: string;
+}
+
+export interface RutinaConAlumno extends Rutina {
+  alumno: { id: number; nombre: string; apellido: string };
+}
+
+export interface AlumnoConRutinas {
+  id: number;
+  nombre: string;
+  apellido: string;
+  cantidad: number;
+  ultimaRutina: string | null; // "aaaa-mm-dd"
+}
+
+// Los PDF viajan como binario (no JSON): por eso estas dos funciones no usan pedir().
+async function bajarPdf(ruta: string) {
+  const respuesta = await fetch(`/api${ruta}`);
+  if (!respuesta.ok) {
+    const cuerpo = await respuesta.json().catch(() => null);
+    throw new ErrorApi(cuerpo?.error ?? "No se pudo cargar el PDF", respuesta.status);
+  }
+  return new Uint8Array(await respuesta.arrayBuffer());
+}
+
+async function enviarPdf(ruta: string, metodo: "POST" | "PUT", pdf: Uint8Array) {
+  const respuesta = await fetch(`/api${ruta}`, {
+    method: metodo,
+    headers: { "Content-Type": "application/pdf" },
+    body: pdf.slice(), // copia con un ArrayBuffer propio (lo que fetch acepta como cuerpo)
+  });
+  const cuerpo = await respuesta.json().catch(() => null);
+  if (!respuesta.ok) {
+    throw new ErrorApi(cuerpo?.error ?? "No se pudo guardar la rutina", respuesta.status, cuerpo?.campos);
+  }
+  return cuerpo as Rutina;
+}
+
+export const rutinasApi = {
+  alumnos: () => pedir<AlumnoConRutinas[]>("/rutinas/alumnos"),
+
+  listar: (alumnoId: number) => pedir<Rutina[]>(`/alumnos/${alumnoId}/rutinas`),
+
+  obtener: (id: number) => pedir<RutinaConAlumno>(`/rutinas/${id}`),
+
+  // La plantilla vacía (el "PDF madre"): nunca se modifica, cada rutina nueva parte de ella.
+  plantilla: () => bajarPdf("/rutinas/plantilla"),
+
+  pdf: (id: number) => bajarPdf(`/rutinas/${id}/pdf`),
+
+  // Link directo para descargar el PDF (la cookie de sesión viaja sola).
+  urlDescarga: (id: number) => `/api/rutinas/${id}/pdf?descargar=true`,
+
+  crear: (alumnoId: number, tipo: TipoBloque, pdf: Uint8Array) =>
+    enviarPdf(`/alumnos/${alumnoId}/rutinas?tipo=${tipo}`, "POST", pdf),
+
+  actualizar: (id: number, pdf: Uint8Array) => enviarPdf(`/rutinas/${id}`, "PUT", pdf),
+
+  eliminar: (id: number) => pedir<void>(`/rutinas/${id}`, { metodo: "DELETE" }),
+};

@@ -56,9 +56,10 @@ A futuro: `sesionId?` cuando exista el módulo de rutinas.
 | Cuota | id, alumnoId, planId, desde, vence, importe (precio al generarla) |
 | Pago | id, alumnoId, cuotaId?, fecha, importe, concepto, medio (`EFECTIVO` \| `TRANSFERENCIA`) |
 
-- Al pagar: se crea Cuota con `desde` = fecha de pago, `vence` = +1 mes (31/01 → 28/02). El importe se propone con el precio del plan, pero Agustín lo puede modificar (por ejemplo, cuando el alumno vuelve después de un tiempo sin entrenar).
-- No se acumulan cuotas por los meses sin pagar: si el alumno deja de venir, no hay que darlo de baja ni corregir saldos; cuando vuelve, se registra un pago nuevo y arranca un período nuevo.
-- Pago parcial → la cuota queda con saldo (importe − pagos) = deuda; el próximo pago se aplica primero ahí.
+- **(Regla vigente desde el 14-10-2026, reemplaza a la original.)** Las cuotas se encadenan: cada una va de un vencimiento al siguiente (+1 mes, 31/01 → 28/02). La primera cuota de un alumno empieza en la fecha de pago.
+- Deuda: mientras el alumno esté **activo**, cada mes sin pagar desde el vencimiento de la última cuota es una cuota adeudada, al precio actual de su plan. Agustín tiene que dar de baja a quien deja de venir. Si se reactiva, la deuda cuenta desde la reactivación.
+- Al pagar una cuota, cubre el mes más viejo adeudado (o el siguiente, si está al día). La cuota se paga completa (no hay pagos parciales); el importe se propone con el precio del plan y se puede modificar.
+- "Anular deuda": si el alumno avisa que no sigue, las cuotas adeudadas se registran como anuladas (`Cuota.anulada`, importe 0) y queda en el historial de cambios; luego se ofrece darlo de baja.
 - Vencida: alumno activo cuya última cuota tiene `vence` < hoy. Próxima a vencer: `vence` dentro de 7 días.
 - Pago con `cuotaId` vacío = otros conceptos.
 - Reporte de ingresos: consulta sobre `Pago` por rango de fechas, totales por medio y por mes.
@@ -104,7 +105,7 @@ Librerías extra: solo `react-router` (front) y `cookie-parser` (back). CSS plan
 
 ## Decisiones tomadas (13/10/2026)
 1. Recuperación/post lesión: reevaluación cada 2 meses (igual que deportivo). En todos los perfiles se puede evaluar cuando Agustín lo disponga.
-2. Deuda: solo por pagos parciales; no se acumulan cuotas por meses sin pagar. Al volver, Agustín elige cuánto cobrar.
+2. Deuda: ~~solo por pagos parciales; no se acumulan cuotas por meses sin pagar~~. **Cambiado el 14-10-2026:** se acumulan las cuotas sin pagar mientras el alumno esté activo, con opción de "Anular deuda" (ver Planes y pagos).
 3. Un único perfil por alumno, con ficha completa accesible.
 4. Proyecto en `C:\Proyectos\Sistema de gestion de entrenamiento` (fuera de OneDrive). Base de datos: PostgreSQL nativo (instalador EDB), sin Docker.
 5. Quitados: tipo de anotación `MATERIAL` y origen `CINTA_METRICA`.

@@ -18,13 +18,14 @@ export const ETIQUETAS_CAMPO: Record<string, string> = {
   profesion: "Profesión",
   perfil: "Perfil",
   detallePerfil: "Detalle del perfil",
-  antecedentesDeportivos: "Antecedentes deportivos",
+  antecedentesDeportivos: "Antecedentes deportivos", // campo eliminado: se conserva para el historial
   lesiones: "Lesiones",
   molestias: "Molestias/contracturas",
   actividadLaboral: "Actividad laboral",
   otrosDatos: "Otros datos",
-  plan: "Plan",
+  plan: "Membresía",
   activo: "Estado",
+  deuda: "Deuda",
 };
 
 // Muestra un valor del historial de forma legible.

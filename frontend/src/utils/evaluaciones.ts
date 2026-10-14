@@ -41,7 +41,7 @@ export interface Serie {
 
 export function armarSeries(evaluaciones: Evaluacion[]): Serie[] {
   const series = new Map<string, Serie>();
-  const cronologicas = [...evaluaciones].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
+  const cronologicas = [...evaluaciones].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.idEvaluacion - b.idEvaluacion);
 
   for (const evaluacion of cronologicas) {
     for (const resultado of evaluacion.resultados) {
@@ -68,6 +68,80 @@ export function textoVariacion(anterior: number, actual: number, unidad: string)
   const porcentaje =
     anterior !== 0 ? ` (${signo}${formatearNumero((diferencia / Math.abs(anterior)) * 100)} %)` : "";
   return `${diferencia > 0 ? "▲" : "▼"} ${signo}${formatearNumero(diferencia)} ${unidad}${porcentaje}`;
+}
+
+// ---------- Gráficos ----------
+
+export interface PuntoGrafico {
+  evaluacionId: number;
+  numero: number; // "Evaluación n°"
+  fecha: string; // "aaaa-mm-dd"
+  valor: number;
+}
+
+export interface SerieGrafico {
+  lado: Lado | null;
+  puntos: PuntoGrafico[]; // de la más vieja a la más nueva
+}
+
+export interface DatosGrafico {
+  pruebaId: number;
+  nombre: string;
+  categoria: CategoriaPrueba;
+  unidad: string;
+  series: SerieGrafico[]; // sin lado, o izquierdo y derecho (para compararlos en el mismo gráfico)
+}
+
+// Orden en que se muestran los gráficos según la categoría de la prueba.
+const ORDEN_CATEGORIA_GRAFICOS: Record<CategoriaPrueba, number> = {
+  FUERZA: 0,
+  POTENCIA: 1,
+  VELOCIDAD: 2,
+  MOVILIDAD: 3,
+  RESISTENCIA: 4,
+};
+
+// Un gráfico por prueba (cada prueba tiene su unidad y su escala).
+export function armarGraficos(evaluaciones: Evaluacion[]): DatosGrafico[] {
+  const graficos = new Map<number, DatosGrafico>();
+  const cronologicas = [...evaluaciones].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.idEvaluacion - b.idEvaluacion);
+
+  for (const evaluacion of cronologicas) {
+    for (const resultado of evaluacion.resultados) {
+      let grafico = graficos.get(resultado.prueba.id);
+      if (!grafico) {
+        grafico = {
+          pruebaId: resultado.prueba.id,
+          nombre: resultado.prueba.nombre,
+          categoria: resultado.prueba.categoria,
+          unidad: resultado.unidad,
+          series: [],
+        };
+        graficos.set(resultado.prueba.id, grafico);
+      }
+      grafico.unidad = resultado.unidad;
+      let serie = grafico.series.find((s) => s.lado === resultado.lado);
+      if (!serie) {
+        serie = { lado: resultado.lado, puntos: [] };
+        grafico.series.push(serie);
+      }
+      serie.puntos.push({
+        evaluacionId: evaluacion.id,
+        numero: evaluacion.idEvaluacion,
+        fecha: evaluacion.fecha.slice(0, 10),
+        valor: Number(resultado.valor),
+      });
+    }
+  }
+
+  // Orden fijo de las series: sin lado, izquierdo, derecho.
+  const orden = (lado: Lado | null) => (lado === null ? 0 : lado === "IZQ" ? 1 : 2);
+  for (const grafico of graficos.values()) grafico.series.sort((a, b) => orden(a.lado) - orden(b.lado));
+
+  // Orden de los gráficos: primero Fuerza, después Potencia, después el resto; dentro de cada categoría, por nombre.
+  return [...graficos.values()].sort(
+    (a, b) => ORDEN_CATEGORIA_GRAFICOS[a.categoria] - ORDEN_CATEGORIA_GRAFICOS[b.categoria] || a.nombre.localeCompare(b.nombre),
+  );
 }
 
 // ---------- Próxima evaluación ----------

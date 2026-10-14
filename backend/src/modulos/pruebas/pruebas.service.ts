@@ -34,7 +34,14 @@ export async function crearPrueba(datos: DatosPrueba) {
 // Cambiar la unidad de una prueba no modifica los resultados ya cargados: cada resultado
 // guarda la unidad con la que se midió.
 export async function actualizarPrueba(id: number, datos: DatosPrueba) {
-  await obtenerPrueba(id);
+  const actual = await obtenerPrueba(id);
   await verificarNombreLibre(datos.nombre, id);
+  // No se puede dejar de medir por lado si ya hay resultados cargados por lado: quedarían inconsistentes.
+  if (actual.porLado && !datos.porLado) {
+    const conLado = await prisma.resultadoEvaluacion.count({ where: { pruebaId: id, lado: { not: null } } });
+    if (conLado > 0) {
+      throw new ErrorHttp(409, `No se puede quitar "por lado": "${actual.nombre}" ya tiene ${conLado} resultados cargados por lado`);
+    }
+  }
   return prisma.prueba.update({ where: { id }, data: datos });
 }

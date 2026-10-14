@@ -25,6 +25,36 @@ export function calcularProximaEvaluacion(perfil: Perfil, ultimaEvaluacion: Date
   };
 }
 
+// Alumnos activos con su última evaluación, cuántas tiene y cuándo toca la próxima.
+export async function resumenAlumnos() {
+  const alumnos = await prisma.alumno.findMany({
+    where: { activo: true },
+    select: {
+      id: true,
+      nombre: true,
+      apellido: true,
+      perfil: true,
+      creadoEn: true,
+      evaluaciones: { select: { fecha: true }, orderBy: { fecha: "desc" }, take: 1 },
+      _count: { select: { evaluaciones: true } },
+    },
+    orderBy: [{ apellido: "asc" }, { nombre: "asc" }],
+  });
+
+  return alumnos.map((alumno) => {
+    const ultima = alumno.evaluaciones[0]?.fecha ?? null;
+    return {
+      id: alumno.id,
+      nombre: alumno.nombre,
+      apellido: alumno.apellido,
+      perfil: alumno.perfil,
+      cantidad: alumno._count.evaluaciones,
+      ultimaEvaluacion: ultima ? textoDesdeFecha(ultima) : null,
+      proximaEvaluacion: calcularProximaEvaluacion(alumno.perfil, ultima, alumno.creadoEn),
+    };
+  });
+}
+
 // Resultados con los datos de su prueba, en el orden en que se cargaron.
 const conResultados = {
   resultados: {
@@ -41,7 +71,8 @@ export async function obtenerEvaluacion(id: number) {
   return evaluacion;
 }
 
-// Comprueba que las pruebas existan y completa la unidad con la de la prueba si no se indicó.
+// Comprueba que las pruebas existan (y que el lado se use solo donde corresponde)
+// y completa la unidad con la de la prueba si no se indicó.
 async function prepararResultados(resultados: DatosEvaluacion["resultados"]) {
   const ids = [...new Set(resultados.map((resultado) => resultado.pruebaId))];
   const pruebas = await prisma.prueba.findMany({ where: { id: { in: ids } } });
@@ -51,6 +82,10 @@ async function prepararResultados(resultados: DatosEvaluacion["resultados"]) {
     const prueba = pruebasPorId.get(resultado.pruebaId);
     if (!prueba) {
       throw new ErrorHttp(400, "Una de las pruebas elegidas no existe");
+    }
+    // El lado solo se puede indicar en las pruebas que se miden por lado.
+    if (resultado.lado && !prueba.porLado) {
+      throw new ErrorHttp(400, `"${prueba.nombre}" no se mide por lado: quitá el lado de ese resultado`);
     }
     return { ...resultado, unidad: resultado.unidad ?? prueba.unidad };
   });
@@ -72,14 +107,19 @@ export async function listarEvaluaciones(alumnoId: number) {
 export async function crearEvaluacion(alumnoId: number, datos: DatosEvaluacion) {
   await obtenerAlumno(alumnoId);
   const resultados = await prepararResultados(datos.resultados);
-  return prisma.evaluacion.create({
-    data: {
-      alumnoId,
-      fecha: fechaDesdeTexto(datos.fecha),
-      observaciones: datos.observaciones,
-      resultados: { create: resultados },
-    },
-    include: conResultados,
+  return prisma.$transaction(async (tx) => {
+    // "Evaluación n°": la siguiente de este alumno (si se borró la última, ese número se reutiliza).
+    const { _max } = await tx.evaluacion.aggregate({ where: { alumnoId }, _max: { idEvaluacion: true } });
+    return tx.evaluacion.create({
+      data: {
+        alumnoId,
+        idEvaluacion: (_max.idEvaluacion ?? 0) + 1,
+        fecha: fechaDesdeTexto(datos.fecha),
+        observaciones: datos.observaciones,
+        resultados: { create: resultados },
+      },
+      include: conResultados,
+    });
   });
 }
 

@@ -9,6 +9,11 @@
   --color-error: #b91c1c;
   --color-error-fondo: #fef2f2;
   --radio: 8px;
+
+  /* Series de los gráficos (paleta validada para daltonismo): 1 = izquierdo/sin lado, 2 = derecho */
+  --serie-1: #2a78d6;
+  --serie-2: #eb6834;
+  --grafico-grilla: #e4e9f0;
 }
 
 * {
@@ -359,6 +364,117 @@ h2 {
   white-space: pre-line;
 }
 
+/* ---------- Rutinas ---------- */
+
+.opciones-bloque {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.opcion-bloque {
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  padding: 20px;
+  border: 2px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  cursor: pointer;
+}
+
+.opcion-bloque:hover {
+  border-color: var(--color-primario);
+  color: var(--color-primario);
+}
+
+/* Visor de la planilla PDF (pdf.js necesita un contenedor con posición absoluta). */
+.visor-pdf-marco {
+  position: relative;
+  height: 78vh;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: #cbd2d9;
+  overflow: hidden;
+}
+
+.visor-pdf {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+}
+
+.visor-pdf-cargando {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: var(--color-texto-suave);
+}
+
+/* ---------- Secciones desplegables (ficha del alumno) ---------- */
+
+.desplegable {
+  padding: 0;
+}
+
+.desplegable summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 24px;
+  cursor: pointer;
+  list-style: none; /* oculta el triángulo propio del navegador */
+  border-radius: var(--radio);
+}
+
+.desplegable summary::-webkit-details-marker {
+  display: none;
+}
+
+.desplegable summary:hover {
+  background: var(--color-fondo);
+}
+
+.desplegable summary:focus-visible {
+  outline: 2px solid var(--color-primario);
+  outline-offset: -2px;
+}
+
+.desplegable summary h2 {
+  margin: 0;
+}
+
+/* Flecha: apunta hacia abajo cerrada y hacia arriba abierta. */
+.desplegable summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--color-texto-suave);
+  border-bottom: 2px solid var(--color-texto-suave);
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.desplegable[open] summary::after {
+  transform: rotate(-135deg);
+}
+
+.desplegable[open] summary {
+  border-bottom: 1px solid var(--color-borde);
+  border-radius: var(--radio) var(--radio) 0 0;
+}
+
+.desplegable-contenido {
+  padding: 16px 24px 24px;
+}
+
 /* ---------- Anotaciones ---------- */
 
 .separador {
@@ -428,6 +544,11 @@ h2 {
 
 .boton-link:hover {
   background: var(--color-fondo);
+}
+
+.boton-ampliar {
+  padding: 0 4px;
+  margin-left: 4px;
 }
 
 .boton-link.peligro {
@@ -555,6 +676,39 @@ h2 {
   margin-bottom: 12px;
 }
 
+.fila-plan {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Link secundario, poco llamativo (ej.: "Ir a Pagos"). */
+.link-discreto {
+  font-size: 0.9rem;
+  color: var(--color-texto-suave);
+  text-decoration: none;
+  white-space: nowrap;
+  padding-top: 6px;
+}
+
+.link-discreto:hover {
+  color: var(--color-primario);
+  text-decoration: underline;
+}
+
+.deuda-titulo {
+  margin: 0 0 4px;
+}
+
+.lista-deuda {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  color: var(--color-texto-suave);
+}
+
 .boton-whatsapp {
   display: inline-block;
   background: #16a34a;
@@ -660,6 +814,199 @@ h2 {
 
 .total-principal strong {
   color: var(--color-primario);
+}
+
+/* ---------- Gráficos de evolución ---------- */
+
+.graficos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.grafico {
+  margin: 0;
+  padding: 16px;
+}
+
+.grafico h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.grafico-metricas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+
+.grafico-metricas dd {
+  margin: 0;
+  color: var(--color-texto-suave);
+}
+
+.grafico-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.grafico-grilla {
+  stroke: var(--grafico-grilla);
+  stroke-width: 1;
+}
+
+.grafico-eje {
+  fill: var(--color-texto-suave);
+  font-size: 11px;
+}
+
+.grafico-linea {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* Anillo del color de la superficie para que los puntos se distingan sobre las líneas. */
+.grafico-punto {
+  stroke: var(--color-superficie);
+  stroke-width: 2;
+}
+
+.grafico-zona {
+  fill: transparent;
+  cursor: default;
+}
+
+.grafico-eje-numero {
+  fill: var(--color-texto);
+  font-weight: 600;
+}
+
+.subtitulo {
+  margin: 0;
+}
+
+.grafico-rotulo {
+  fill: var(--color-texto);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.grafico-leyenda {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+  margin-top: 4px;
+}
+
+.muestra-serie {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+/* ---------- Listas y búsqueda ---------- */
+
+.filtros-simple {
+  grid-template-columns: minmax(0, 420px);
+}
+
+.acciones-columna {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.buscador {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  font: inherit;
+  margin-bottom: 12px;
+}
+
+.lista-seleccion {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lista-seleccion button {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--color-borde);
+  padding: 10px 8px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.lista-seleccion button:hover {
+  background: var(--color-fondo);
+}
+
+.lista-planes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.plan-historial {
+  border-top: 1px solid var(--color-borde);
+  padding: 12px 0;
+}
+
+.plan-historial p {
+  margin: 4px 0 0;
+}
+
+.texto-recortado {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boton-peligro {
+  color: var(--color-error);
+}
+
+.edicion-precio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.edicion-precio input {
+  padding: 8px 10px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  font: inherit;
+  width: 160px;
+}
+
+.edicion-precio .boton,
+.edicion-precio .boton-secundario {
+  padding: 8px 12px;
+}
+
+.nota {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
 }
 
 @media (max-width: 800px) {

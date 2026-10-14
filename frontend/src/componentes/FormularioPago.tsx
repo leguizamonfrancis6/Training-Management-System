@@ -3,7 +3,7 @@ import { ErrorApi } from "../api/cliente";
 import { pagosApi, type CuotaResumen, type DatosPago, type MedioPago } from "../api/pagos";
 import type { Plan } from "../api/planes";
 import { formatearFecha, formatearMoneda, hoyComoTexto, sumarMeses } from "../utils/formato";
-import { ETIQUETAS_MEDIO, importeParaEditar, leerImporte } from "../utils/pagos";
+import { ETIQUETAS_MEDIO, importeParaEditar, textoPrecioPlan } from "../utils/pagos";
 import Campo from "./Campo";
 
 type TipoPago = DatosPago["tipo"];
@@ -12,13 +12,24 @@ interface Props {
   alumnoId: number;
   plan: Plan | null;
   cuotasConSaldo: CuotaResumen[];
+  inicioCuota: string | null; // dónde empieza la cuota que se paga; null = en la fecha de pago
+  cantidadAdeudadas: number;
   onGuardado: () => void;
   onCancelar: () => void;
 }
 
 // Registro de un pago: nueva cuota, saldo de una cuota anterior u otro concepto.
-export default function FormularioPago({ alumnoId, plan, cuotasConSaldo, onGuardado, onCancelar }: Props) {
-  const precioPlan = plan ? importeParaEditar(plan.precioMensual) : "";
+export default function FormularioPago({
+  alumnoId,
+  plan,
+  cuotasConSaldo,
+  inicioCuota,
+  cantidadAdeudadas,
+  onGuardado,
+  onCancelar,
+}: Props) {
+  // Si el plan todavía no tiene precio (0), el importe queda vacío para completarlo a mano.
+  const precioPlan = plan && Number(plan.precioMensual) > 0 ? importeParaEditar(plan.precioMensual) : "";
   // Si hay saldo pendiente se propone pagarlo primero; si no, una cuota nueva.
   const [tipo, setTipo] = useState<TipoPago>(cuotasConSaldo.length > 0 ? "SALDO" : "CUOTA");
   const [fecha, setFecha] = useState(hoyComoTexto());
@@ -38,15 +49,8 @@ export default function FormularioPago({ alumnoId, plan, cuotasConSaldo, onGuard
     setTipo(nuevo);
     setErrores({});
     setError("");
-    if (nuevo === "CUOTA") setImporte(importeCuota);
     if (nuevo === "SALDO") setImporte(importeParaEditar(cuotasConSaldo.find((c) => c.id === cuotaId)?.saldo ?? 0));
     if (nuevo === "OTRO") setImporte("");
-  }
-
-  function cambiarImporteCuota(valor: string) {
-    // Mientras el pago sea igual a la cuota, se actualizan juntos (caso más común: paga completo).
-    if (importe === importeCuota) setImporte(valor);
-    setImporteCuota(valor);
   }
 
   function cambiarCuota(id: number) {
@@ -61,7 +65,8 @@ export default function FormularioPago({ alumnoId, plan, cuotasConSaldo, onGuard
     setGuardando(true);
 
     let datos: DatosPago;
-    if (tipo === "CUOTA") datos = { tipo, fecha, importeCuota, importe, medio };
+    // La cuota se paga completa: lo que paga es el importe de la cuota.
+    if (tipo === "CUOTA") datos = { tipo, fecha, importeCuota, importe: importeCuota, medio };
     else if (tipo === "SALDO") datos = { tipo, cuotaId, fecha, importe, medio };
     else datos = { tipo, fecha, importe, concepto, medio };
 
@@ -77,10 +82,6 @@ export default function FormularioPago({ alumnoId, plan, cuotasConSaldo, onGuard
   }
 
   // Avisos mientras se escribe.
-  const valorCuota = leerImporte(importeCuota);
-  const valorPago = leerImporte(importe);
-  const quedaSaldo =
-    tipo === "CUOTA" && valorCuota !== null && valorPago !== null && valorPago < valorCuota ? valorCuota - valorPago : 0;
   const sinPlan = tipo === "CUOTA" && !plan;
 
   return (
@@ -105,7 +106,11 @@ export default function FormularioPago({ alumnoId, plan, cuotasConSaldo, onGuard
         </label>
       </div>
 
-      {sinPlan && <p className="mensaje-error">El alumno no tiene plan. Asignale uno arriba para registrar cuotas.</p>}
+      {sinPlan && (
+        <p className="mensaje-error">
+          El alumno no tiene una membresía asignada. Asignásela desde su ficha (Cuota y pagos) o desde Pagos → Membresías para registrar cuotas.
+        </p>
+      )}
 
       <div className="grilla">
         <Campo etiqueta="Fecha de pago" obligatorio errores={errores.fecha}>
@@ -126,9 +131,9 @@ export default function FormularioPago({ alumnoId, plan, cuotasConSaldo, onGuard
             etiqueta="Importe de la cuota"
             obligatorio
             errores={errores.importeCuota}
-            ayuda={plan ? `Precio del plan: ${formatearMoneda(plan.precioMensual)}` : undefined}
+            ayuda={plan ? `Precio de la membresía: ${textoPrecioPlan(plan.precioMensual)}` : undefined}
           >
-            <input inputMode="decimal" value={importeCuota} onChange={(e) => cambiarImporteCuota(e.target.value)} />
+            <input inputMode="decimal" value={importeCuota} onChange={(e) => setImporteCuota(e.target.value)} />
           </Campo>
         )}
 
@@ -150,15 +155,17 @@ export default function FormularioPago({ alumnoId, plan, cuotasConSaldo, onGuard
           </Campo>
         )}
 
-        <Campo etiqueta={tipo === "CUOTA" ? "Paga ahora" : "Importe"} obligatorio errores={errores.importe}>
-          <input inputMode="decimal" value={importe} onChange={(e) => setImporte(e.target.value)} placeholder="Ej.: 25.000" />
-        </Campo>
+        {tipo !== "CUOTA" && (
+          <Campo etiqueta="Importe" obligatorio errores={errores.importe}>
+            <input inputMode="decimal" value={importe} onChange={(e) => setImporte(e.target.value)} placeholder="Ej.: 25.000" />
+          </Campo>
+        )}
       </div>
 
-      {tipo === "CUOTA" && /^\d{4}-\d{2}-\d{2}$/.test(fecha) && (
+      {tipo === "CUOTA" && (inicioCuota || /^\d{4}-\d{2}-\d{2}$/.test(fecha)) && (
         <p className="texto-suave">
-          La cuota cubre del {formatearFecha(fecha)} al {formatearFecha(sumarMeses(fecha, 1))}.
-          {quedaSaldo > 0 && <strong> Queda un saldo pendiente de {formatearMoneda(quedaSaldo)}.</strong>}
+          La cuota cubre del {formatearFecha(inicioCuota ?? fecha)} al {formatearFecha(sumarMeses(inicioCuota ?? fecha, 1))}.
+          {cantidadAdeudadas > 1 && ` Debe ${cantidadAdeudadas} cuotas: este pago cubre la más vieja.`}
         </p>
       )}
 

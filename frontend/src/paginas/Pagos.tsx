@@ -10,13 +10,13 @@ import {
   textoVencimiento,
 } from "../utils/pagos";
 
-type Filtro = "TODOS" | "VENCIDA" | "POR_VENCER" | "CON_SALDO" | "SIN_PAGOS" | "AL_DIA";
+type Filtro = "TODOS" | "VENCIDA" | "POR_VENCER" | "CON_DEUDA" | "SIN_PAGOS" | "AL_DIA";
 
 const FILTROS: { valor: Filtro; etiqueta: string; cumple: (fila: EstadoCuotaAlumno) => boolean }[] = [
   { valor: "TODOS", etiqueta: "Todos", cumple: () => true },
   { valor: "VENCIDA", etiqueta: "Vencidas", cumple: (f) => f.estado === "VENCIDA" },
   { valor: "POR_VENCER", etiqueta: "Por vencer", cumple: (f) => f.estado === "POR_VENCER" },
-  { valor: "CON_SALDO", etiqueta: "Con saldo pendiente", cumple: (f) => Number(f.deudaTotal) > 0 },
+  { valor: "CON_DEUDA", etiqueta: "Con deuda", cumple: (f) => f.cantidadAdeudadas > 0 || Number(f.deudaTotal) > 0 },
   { valor: "SIN_PAGOS", etiqueta: "Sin pagos", cumple: (f) => f.estado === "SIN_PAGOS" },
   { valor: "AL_DIA", etiqueta: "Al día", cumple: (f) => f.estado === "AL_DIA" },
 ];
@@ -41,13 +41,22 @@ export default function Pagos() {
     <section>
       <div className="pagina-encabezado">
         <h1>Pagos</h1>
-        <Link to="/ingresos" className="boton-secundario">
-          Ver ingresos
-        </Link>
+        <div className="acciones-columna">
+          <Link to="/ingresos" className="boton-secundario">
+            Historial de Ingresos
+          </Link>
+          <Link to="/pagos/nuevo" className="boton">
+            Agregar un pago
+          </Link>
+          <Link to="/pagos/membresias" className="boton-secundario">
+            Membresías
+          </Link>
+          <Link to="/pagos/configuracion" className="boton-secundario">
+            Configurar pagos
+          </Link>
+        </div>
       </div>
-      <p className="texto-suave">
-        Estado de la cuota de los alumnos activos. Para registrar un pago, entrá a la ficha del alumno.
-      </p>
+      <p className="texto-suave">Estado de la cuota de los alumnos activos.</p>
 
       {error && <p className="mensaje-error">{error}</p>}
 
@@ -74,10 +83,10 @@ export default function Pagos() {
                 <thead>
                   <tr>
                     <th>Alumno</th>
-                    <th>Plan</th>
+                    <th>Membresía</th>
                     <th>Estado</th>
                     <th>Vencimiento</th>
-                    <th className="numero">Saldo pendiente</th>
+                    <th className="numero">Deuda</th>
                     <th />
                   </tr>
                 </thead>
@@ -89,13 +98,20 @@ export default function Pagos() {
                           {fila.apellido}, {fila.nombre}
                         </Link>
                       </td>
-                      <td>{fila.plan ?? <span className="texto-suave">Sin plan</span>}</td>
+                      <td>{fila.plan ?? <span className="texto-suave">Sin membresía</span>}</td>
                       <td>
                         <span className={claseEstadoCuota(fila.estado)}>{ETIQUETAS_ESTADO_CUOTA[fila.estado]}</span>
                       </td>
-                      <td>{textoVencimiento(fila.estado, fila.vence, fila.diasRestantes)}</td>
+                      <td>{textoVencimiento(fila.estado, fila.vence, fila.diasRestantes) || <span className="texto-suave">—</span>}</td>
                       <td className="numero sin-salto">
-                        {Number(fila.deudaTotal) > 0 ? formatearMoneda(fila.deudaTotal) : <span className="texto-suave">—</span>}
+                        {Number(fila.deudaTotal) > 0 && formatearMoneda(fila.deudaTotal)}
+                        {fila.cantidadAdeudadas > 0 && (
+                          <span className="texto-suave">
+                            {" "}
+                            ({fila.cantidadAdeudadas} {fila.cantidadAdeudadas === 1 ? "cuota" : "cuotas"})
+                          </span>
+                        )}
+                        {Number(fila.deudaTotal) === 0 && fila.cantidadAdeudadas === 0 && <span className="texto-suave">—</span>}
                       </td>
                       <td className="sin-salto">
                         {requiereAviso(fila) && (

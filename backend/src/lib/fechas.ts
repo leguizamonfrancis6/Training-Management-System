@@ -23,6 +23,12 @@ export function hoyComoTexto() {
   return fechaArgentina(new Date());
 }
 
+// "aaaa-mm-dd" → "dd-mm-aaaa", para textos que se guardan para mostrar (ej.: historial de cambios).
+export function formatearFechaTexto(texto: string) {
+  const [anio, mes, dia] = texto.split("-");
+  return `${dia}-${mes}-${anio}`;
+}
+
 // Suma meses respetando el fin de mes: 31-01 + 1 mes = 28-02 (o 29-02 en bisiesto).
 export function sumarMeses(texto: string, meses: number) {
   const [anio, mes, dia] = texto.split("-").map(Number);

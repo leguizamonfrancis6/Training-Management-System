@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router";
 import { ErrorApi } from "../api/cliente";
 import { pruebasApi, type DatosPrueba, type Prueba } from "../api/pruebas";
 import Campo from "../componentes/Campo";
 import { ETIQUETAS_CATEGORIA } from "../utils/evaluaciones";
 
-const PRUEBA_VACIA: DatosPrueba = { nombre: "", categoria: "", unidad: "", activa: true };
+const PRUEBA_VACIA: DatosPrueba = { nombre: "", categoria: "", unidad: "", porLado: false, activa: true };
 
 interface PropsFormulario {
   inicial: DatosPrueba;
@@ -77,6 +78,14 @@ function FormularioPrueba({ inicial, textoBoton, onGuardar, onCancelar }: PropsF
           )}
         </div>
       </div>
+      <label className="casilla">
+        <input
+          type="checkbox"
+          checked={datos.porLado}
+          onChange={(e) => setDatos({ ...datos, porLado: e.target.checked })}
+        />
+        Se mide por lado (izquierdo / derecho)
+      </label>
     </form>
   );
 }
@@ -128,6 +137,9 @@ export default function Pruebas() {
 
   return (
     <section>
+      <Link to="/evaluaciones" className="volver">
+        ← Evaluaciones
+      </Link>
       <h1>Configuración de evaluaciones</h1>
       <p className="texto-suave">
         Catálogo de evaluaciones a realizar. Las desactivadas dejan de ofrecerse, pero sus resultados anteriores se
@@ -154,6 +166,7 @@ export default function Pruebas() {
                 <th>Nombre</th>
                 <th>Categoría</th>
                 <th>Unidad</th>
+                <th>Por lado</th>
                 <th>Estado</th>
                 <th />
               </tr>
@@ -162,7 +175,7 @@ export default function Pruebas() {
               {pruebas.map((prueba) =>
                 editandoId === prueba.id ? (
                   <tr key={prueba.id}>
-                    <td colSpan={5}>
+                    <td colSpan={6}>
                       <FormularioPrueba
                         inicial={prueba}
                         textoBoton="Guardar"
@@ -176,6 +189,7 @@ export default function Pruebas() {
                     <td>{prueba.nombre}</td>
                     <td>{ETIQUETAS_CATEGORIA[prueba.categoria]}</td>
                     <td>{prueba.unidad}</td>
+                    <td>{prueba.porLado ? "Sí" : "No"}</td>
                     <td>
                       <span className={prueba.activa ? "insignia insignia-ok" : "insignia"}>
                         {prueba.activa ? "Activa" : "Eliminada"}

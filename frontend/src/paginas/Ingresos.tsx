@@ -94,10 +94,6 @@ export default function Ingresos() {
               <strong>{formatearMoneda(reporte.totales.transferencia)}</strong>
             </div>
             <div className="tarjeta total">
-              <span className="texto-suave">Cuotas</span>
-              <strong>{formatearMoneda(reporte.totales.cuotas)}</strong>
-            </div>
-            <div className="tarjeta total">
               <span className="texto-suave">Otros conceptos</span>
               <strong>{formatearMoneda(reporte.totales.otros)}</strong>
             </div>

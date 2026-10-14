@@ -1,24 +1,28 @@
 import { Router } from "express";
 import { leerId } from "../../lib/errores";
 import { validar } from "../../middlewares/validar";
-import { esquemaFiltrosPlanes, esquemaPlan, type DatosPlan } from "./planes.schemas";
-import { actualizarPlan, crearPlan, listarPlanes } from "./planes.service";
+import { esquemaPrecioPlan, type DatosPrecioPlan } from "./planes.schemas";
+import { actualizarPrecioPlan, listarAlumnosConPlan, listarPlanes, obtenerHistorialPlanes } from "./planes.service";
 
-// Sin DELETE: un plan con cuotas no se puede borrar; se desactiva ("Eliminar" en pantalla).
+// Planes fijos (uno por modalidad, creados por el seed): no se crean ni se borran, solo cambia el precio.
 export const planesRouter = Router();
 
-// GET /api/planes?incluirInactivos=true
-planesRouter.get("/", async (req, res) => {
-  const { incluirInactivos } = esquemaFiltrosPlanes.parse(req.query);
-  res.json(await listarPlanes(incluirInactivos));
+// GET /api/planes
+planesRouter.get("/", async (_req, res) => {
+  res.json(await listarPlanes());
 });
 
-// POST /api/planes
-planesRouter.post("/", validar(esquemaPlan), async (req, res) => {
-  res.status(201).json(await crearPlan(req.body as DatosPlan));
+// GET /api/planes/alumnos  → alumnos activos con su plan actual
+planesRouter.get("/alumnos", async (_req, res) => {
+  res.json(await listarAlumnosConPlan());
 });
 
-// PUT /api/planes/:id  (incluye "activo" para eliminar/restaurar)
-planesRouter.put("/:id", validar(esquemaPlan), async (req, res) => {
-  res.json(await actualizarPlan(leerId(req.params.id), req.body as DatosPlan));
+// GET /api/planes/alumnos/:alumnoId  → historial de planes del alumno
+planesRouter.get("/alumnos/:alumnoId", async (req, res) => {
+  res.json(await obtenerHistorialPlanes(leerId(req.params.alumnoId)));
+});
+
+// PUT /api/planes/:id  { precioMensual }
+planesRouter.put("/:id", validar(esquemaPrecioPlan), async (req, res) => {
+  res.json(await actualizarPrecioPlan(leerId(req.params.id), req.body as DatosPrecioPlan));
 });

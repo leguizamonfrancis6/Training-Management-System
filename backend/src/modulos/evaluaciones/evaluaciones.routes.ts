@@ -8,6 +8,7 @@ import {
   eliminarEvaluacion,
   listarEvaluaciones,
   obtenerEvaluacion,
+  resumenAlumnos,
 } from "./evaluaciones.service";
 
 // Se monta en /api, igual que anotaciones: se listan y crean dentro de un alumno,
@@ -22,6 +23,11 @@ evaluacionesRouter.get("/alumnos/:alumnoId/evaluaciones", async (req, res) => {
 // POST /api/alumnos/:alumnoId/evaluaciones
 evaluacionesRouter.post("/alumnos/:alumnoId/evaluaciones", validar(esquemaEvaluacion), async (req, res) => {
   res.status(201).json(await crearEvaluacion(leerId(req.params.alumnoId), req.body as DatosEvaluacion));
+});
+
+// GET /api/evaluaciones/resumen-alumnos  (va antes de /evaluaciones/:id para que no se confunda con un id)
+evaluacionesRouter.get("/evaluaciones/resumen-alumnos", async (_req, res) => {
+  res.json(await resumenAlumnos());
 });
 
 // GET /api/evaluaciones/:id

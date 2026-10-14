@@ -16,7 +16,6 @@ const VACIO: DatosAlumno = {
   profesion: "",
   perfil: "",
   detallePerfil: "",
-  antecedentesDeportivos: "",
   lesiones: "",
   molestias: "",
   actividadLaboral: "",
@@ -35,7 +34,6 @@ function datosDesdeAlumno(alumno: Alumno): DatosAlumno {
     profesion: alumno.profesion,
     perfil: alumno.perfil,
     detallePerfil: alumno.detallePerfil ?? "",
-    antecedentesDeportivos: alumno.antecedentesDeportivos ?? "",
     lesiones: alumno.lesiones ?? "",
     molestias: alumno.molestias ?? "",
     actividadLaboral: alumno.actividadLaboral ?? "",
@@ -44,7 +42,6 @@ function datosDesdeAlumno(alumno: Alumno): DatosAlumno {
 }
 
 const CAMPOS_TEXTO_LARGO = [
-  "antecedentesDeportivos",
   "lesiones",
   "molestias",
   "actividadLaboral",

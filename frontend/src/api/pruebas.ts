@@ -7,6 +7,7 @@ export interface Prueba {
   nombre: string;
   categoria: CategoriaPrueba;
   unidad: string;
+  porLado: boolean; // se carga por lado (izquierdo / derecho)
   activa: boolean;
 }
 
@@ -14,6 +15,7 @@ export interface DatosPrueba {
   nombre: string;
   categoria: CategoriaPrueba | "";
   unidad: string;
+  porLado: boolean; // se carga por lado (izquierdo / derecho)
   activa: boolean;
 }
 

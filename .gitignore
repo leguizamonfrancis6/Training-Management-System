@@ -10,6 +10,9 @@ build/
 .env.*
 !.env.example
 
+# Plantilla de rutinas: la actual tiene datos de un alumno real (no se sube)
+/rutina.pdf
+
 # Logs
 *.log
 npm-debug.log*

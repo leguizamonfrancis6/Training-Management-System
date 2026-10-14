@@ -1,40 +1,38 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
 import { alumnosApi } from "../api/alumnos";
 import { pagosApi, type CuotaResumen, type Pago, type PagosAlumno as DatosPagos } from "../api/pagos";
-import { planesApi, type Plan } from "../api/planes";
 import { formatearFecha, formatearMoneda } from "../utils/formato";
 import {
   claseEstadoCuota,
   ETIQUETAS_ESTADO_CUOTA,
   ETIQUETAS_MEDIO,
-  ETIQUETAS_MODALIDAD,
   linkWhatsApp,
   requiereAviso,
   textoVencimiento,
 } from "../utils/pagos";
 import FormularioPago from "./FormularioPago";
+import SelectorPlan from "./SelectorPlan";
+import Desplegable from "./Desplegable";
 
 // Cantidad de pagos que se ven sin desplegar la lista.
 const CANTIDAD_INICIAL = 3;
 
 interface Props {
-  alumno: { id: number; nombre: string; telefono: string };
-  onCambioPlan: () => void; // para que la ficha actualice el historial
+  alumno: { id: number; nombre: string; apellido: string; telefono: string; activo: boolean };
+  onCambio: () => void; // para que la ficha actualice el historial y el estado del alumno
 }
 
 // Sección "Cuota y pagos" de la ficha del alumno.
-export default function PagosAlumno({ alumno, onCambioPlan }: Props) {
+export default function PagosAlumno({ alumno, onCambio }: Props) {
   const [datos, setDatos] = useState<DatosPagos | null>(null);
-  const [planes, setPlanes] = useState<Plan[]>([]);
   const [error, setError] = useState("");
   const [registrando, setRegistrando] = useState(false);
   const [verTodos, setVerTodos] = useState(false);
 
   const cargar = useCallback(async () => {
     try {
-      const [pagos, listaPlanes] = await Promise.all([pagosApi.obtener(alumno.id), planesApi.listar()]);
-      setDatos(pagos);
-      setPlanes(listaPlanes);
+      setDatos(await pagosApi.obtener(alumno.id));
       setError("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudieron cargar los pagos");
@@ -45,13 +43,31 @@ export default function PagosAlumno({ alumno, onCambioPlan }: Props) {
     cargar();
   }, [cargar]);
 
-  async function cambiarPlan(valor: string) {
+  async function planCambiado() {
+    await cargar();
+    onCambio();
+  }
+
+  // El alumno avisó que no sigue: las cuotas adeudadas no se le cobran.
+  // Después se ofrece darlo de baja (si sigue activo, se le vuelven a acumular cuotas).
+  async function anularDeuda() {
+    if (!datos) return;
+    const { cuotasAdeudadas, deudaTotal } = datos.situacion;
+    const cantidad = `${cuotasAdeudadas.length} ${cuotasAdeudadas.length === 1 ? "cuota" : "cuotas"}`;
+    const monto = Number(deudaTotal) > 0 ? ` (${formatearMoneda(deudaTotal)})` : "";
+    if (!window.confirm(`¿Anular la deuda de ${cantidad}${monto}? No se le van a cobrar.`)) return;
     try {
-      await alumnosApi.cambiarPlan(alumno.id, valor ? Number(valor) : null);
+      await pagosApi.anularDeuda(alumno.id);
+      if (
+        alumno.activo &&
+        window.confirm(`¿Dar de baja a ${alumno.nombre} ${alumno.apellido}? Si sigue activo, se le van a volver a acumular cuotas.`)
+      ) {
+        await alumnosApi.cambiarEstado(alumno.id, false);
+      }
       await cargar();
-      onCambioPlan();
+      onCambio();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cambiar el plan");
+      setError(err instanceof Error ? err.message : "No se pudo anular la deuda");
     }
   }
 
@@ -84,45 +100,64 @@ export default function PagosAlumno({ alumno, onCambioPlan }: Props) {
 
   if (!datos) {
     return (
-      <div className="tarjeta seccion">
-        <h2>Cuota y pagos</h2>
+      <Desplegable titulo="Cuota y pagos">
         {error ? <p className="mensaje-error">{error}</p> : <p className="texto-suave">Cargando…</p>}
-      </div>
+      </Desplegable>
     );
   }
 
   const { plan, situacion, pagos } = datos;
-  // Si el plan actual fue eliminado, igual se muestra en la lista para que el select lo refleje.
-  const opcionesPlan = plan && !planes.some((p) => p.id === plan.id) ? [plan, ...planes] : planes;
-  const aviso = { nombre: alumno.nombre, telefono: alumno.telefono, ...situacion };
+  const adeudadas = situacion.cuotasAdeudadas;
+  const aviso = { nombre: alumno.nombre, telefono: alumno.telefono, cantidadAdeudadas: adeudadas.length, ...situacion };
   const visibles = verTodos ? pagos : pagos.slice(0, CANTIDAD_INICIAL);
 
   return (
-    <div className="tarjeta seccion">
-      <h2>Cuota y pagos</h2>
+    <Desplegable titulo="Cuota y pagos">
       {error && <p className="mensaje-error">{error}</p>}
 
-      <div className="pago-plan">
-        <label htmlFor="plan-alumno">Plan:</label>
-        <select id="plan-alumno" value={plan?.id ?? ""} onChange={(e) => cambiarPlan(e.target.value)}>
-          <option value="">Sin plan</option>
-          {opcionesPlan.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nombre} — {formatearMoneda(p.precioMensual)} ({ETIQUETAS_MODALIDAD[p.modalidad]})
-            </option>
-          ))}
-        </select>
+      <div className="fila-plan">
+        <SelectorPlan alumnoId={alumno.id} planActual={plan} onCambio={planCambiado} />
+        <Link to="/pagos" className="link-discreto">
+          Ir a Pagos →
+        </Link>
       </div>
 
       <div className="pago-estado">
         <span className={claseEstadoCuota(situacion.estado)}>{ETIQUETAS_ESTADO_CUOTA[situacion.estado]}</span>
-        <span>{textoVencimiento(situacion.estado, situacion.vence, situacion.diasRestantes)}</span>
+        {situacion.vence && <span>{textoVencimiento(situacion.estado, situacion.vence, situacion.diasRestantes)}</span>}
         {requiereAviso(aviso) && (
           <a className="boton-whatsapp" href={linkWhatsApp(aviso)} target="_blank" rel="noopener noreferrer">
-            Avisar por WhatsApp
+            Comunicarse vía WhatsApp
           </a>
         )}
       </div>
+
+      {adeudadas.length > 0 && (
+        <div className="pago-saldo">
+          <div>
+            <p className="deuda-titulo">
+              Debe {adeudadas.length} {adeudadas.length === 1 ? "cuota" : "cuotas"}
+              {situacion.precioCuotaAdeudada ? (
+                <>
+                  : <strong>{formatearMoneda(Number(situacion.precioCuotaAdeudada) * adeudadas.length)}</strong>
+                </>
+              ) : (
+                <span className="texto-suave"> (la membresía no tiene precio definido)</span>
+              )}
+            </p>
+            <ul className="lista-deuda">
+              {adeudadas.map((periodo) => (
+                <li key={periodo.desde}>
+                  Del {formatearFecha(periodo.desde)} al {formatearFecha(periodo.vence)}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <button type="button" className="boton-link peligro" onClick={anularDeuda}>
+            Anular deuda
+          </button>
+        </div>
+      )}
 
       {situacion.cuotasConSaldo.map((cuota) => (
         <div key={cuota.id} className="pago-saldo">
@@ -144,6 +179,8 @@ export default function PagosAlumno({ alumno, onCambioPlan }: Props) {
           alumnoId={alumno.id}
           plan={plan}
           cuotasConSaldo={situacion.cuotasConSaldo}
+          inicioCuota={situacion.inicioProximaCuota}
+          cantidadAdeudadas={adeudadas.length}
           onGuardado={pagoRegistrado}
           onCancelar={() => setRegistrando(false)}
         />
@@ -202,6 +239,6 @@ export default function PagosAlumno({ alumno, onCambioPlan }: Props) {
           )}
         </>
       )}
-    </div>
+    </Desplegable>
   );
 }

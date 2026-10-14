@@ -4,14 +4,20 @@ import { ErrorApi } from "../api/cliente";
 import { ETIQUETAS_TIPO_ANOTACION } from "../utils/anotaciones";
 import { formatearFecha, hoyComoTexto } from "../utils/formato";
 import Campo from "./Campo";
+import Desplegable from "./Desplegable";
 
 // Cantidad de anotaciones que se ven sin desplegar la lista.
 const CANTIDAD_INICIAL = 2;
+
+// Caracteres del detalle que se muestran antes de "Ver más".
+const LARGO_RESUMEN = 60;
 
 function anotacionVacia(): DatosAnotacion {
   return { fecha: hoyComoTexto(), tipo: "OBSERVACION", detalle: "", motivo: "" };
 }
 
+// El campo "motivo" ya no se usa: no se carga ni se muestra. Las anotaciones viejas que lo tienen
+// lo conservan en la base (viaja sin cambios al editar).
 function datosDesdeAnotacion(anotacion: Anotacion): DatosAnotacion {
   return {
     fecha: anotacion.fecha.slice(0, 10),
@@ -81,9 +87,6 @@ function FormularioAnotacion({ inicial, textoBoton, onGuardar, onCancelar }: Pro
           placeholder="Ej.: se reemplazó sentadilla con barra por sentadilla goblet"
         />
       </Campo>
-      <Campo etiqueta="Motivo" errores={errores.motivo} ayuda="Opcional: por qué se hizo el cambio">
-        <input value={datos.motivo} onChange={(e) => cambiar("motivo", e.target.value)} />
-      </Campo>
       <div className="acciones">
         <button type="submit" className="boton" disabled={guardando}>
           {guardando ? "Guardando…" : textoBoton}
@@ -105,6 +108,16 @@ export default function AnotacionesAlumno({ alumnoId }: { alumnoId: number }) {
   const [filtroTipo, setFiltroTipo] = useState<TipoAnotacion | "">("");
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [verTodas, setVerTodas] = useState(false);
+  const [ampliadas, setAmpliadas] = useState<Set<number>>(new Set()); // anotaciones con el detalle completo a la vista
+
+  function alternarAmpliada(id: number) {
+    setAmpliadas((anteriores) => {
+      const nuevas = new Set(anteriores);
+      if (nuevas.has(id)) nuevas.delete(id);
+      else nuevas.add(id);
+      return nuevas;
+    });
+  }
 
   const cargar = useCallback(async () => {
     try {
@@ -146,8 +159,7 @@ export default function AnotacionesAlumno({ alumnoId }: { alumnoId: number }) {
   const visibles = verTodas ? filtradas : filtradas.slice(0, CANTIDAD_INICIAL);
 
   return (
-    <div className="tarjeta seccion">
-      <h2>Anotaciones de entrenamiento</h2>
+    <Desplegable titulo="Anotaciones de entrenamiento">
 
       <FormularioAnotacion inicial={anotacionVacia()} textoBoton="Agregar anotación" onGuardar={crear} />
 
@@ -204,8 +216,16 @@ export default function AnotacionesAlumno({ alumnoId }: { alumnoId: number }) {
                       </button>
                     </div>
                   </div>
-                  <p className="texto-largo">{anotacion.detalle}</p>
-                  {anotacion.motivo && <p className="texto-suave texto-largo">Motivo: {anotacion.motivo}</p>}
+                  <p className="texto-largo">
+                    {anotacion.detalle.length <= LARGO_RESUMEN || ampliadas.has(anotacion.id)
+                      ? anotacion.detalle
+                      : `${anotacion.detalle.slice(0, LARGO_RESUMEN).trimEnd()}…`}
+                    {anotacion.detalle.length > LARGO_RESUMEN && (
+                      <button type="button" className="boton-link boton-ampliar" onClick={() => alternarAmpliada(anotacion.id)}>
+                        {ampliadas.has(anotacion.id) ? "Ver menos" : "Ver más"}
+                      </button>
+                    )}
+                  </p>
                 </li>
               ),
             )}
@@ -220,6 +240,6 @@ export default function AnotacionesAlumno({ alumnoId }: { alumnoId: number }) {
           )}
         </>
       )}
-    </div>
+    </Desplegable>
   );
 }

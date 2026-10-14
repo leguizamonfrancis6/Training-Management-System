@@ -18,6 +18,20 @@ export function formatearFechaHora(iso: string) {
   return `${dia} ${dosDigitos(fecha.getHours())}:${dosDigitos(fecha.getMinutes())}`;
 }
 
+// Minúsculas y sin tildes, para buscar: "Pérez" → "perez".
+export function normalizarTexto(texto: string) {
+  return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+// ¿El texto contiene todas las palabras buscadas? (sin distinguir tildes ni mayúsculas)
+export function coincideBusqueda(texto: string, busqueda: string) {
+  const normalizado = normalizarTexto(texto);
+  return normalizarTexto(busqueda)
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((palabra) => normalizado.includes(palabra));
+}
+
 // Montos en pesos: "$ 25.000,00".
 export function formatearMoneda(valor: string | number) {
   return Number(valor).toLocaleString("es-AR", { style: "currency", currency: "ARS" });

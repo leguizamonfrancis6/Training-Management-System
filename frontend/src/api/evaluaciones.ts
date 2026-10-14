@@ -1,4 +1,5 @@
 import { pedir } from "./cliente";
+import type { Perfil } from "./alumnos";
 import type { CategoriaPrueba } from "./pruebas";
 
 export type Lado = "IZQ" | "DER";
@@ -18,6 +19,7 @@ export interface ResultadoEvaluacion {
 export interface Evaluacion {
   id: number;
   alumnoId: number;
+  idEvaluacion: number; // "Evaluación n°": numeración propia de cada alumno (1, 2, 3…)
   fecha: string; // ISO; la fecha son los primeros 10 caracteres
   observaciones: string | null;
   resultados: ResultadoEvaluacion[];
@@ -49,7 +51,20 @@ export interface DatosEvaluacion {
   resultados: DatosResultado[];
 }
 
+// Alumno activo con el resumen de sus evaluaciones (pantalla Evaluaciones).
+export interface ResumenEvaluacionAlumno {
+  id: number;
+  nombre: string;
+  apellido: string;
+  perfil: Perfil;
+  cantidad: number;
+  ultimaEvaluacion: string | null; // "aaaa-mm-dd"
+  proximaEvaluacion: ProximaEvaluacion;
+}
+
 export const evaluacionesApi = {
+  resumenAlumnos: () => pedir<ResumenEvaluacionAlumno[]>("/evaluaciones/resumen-alumnos"),
+
   listar: (alumnoId: number) => pedir<ListadoEvaluaciones>(`/alumnos/${alumnoId}/evaluaciones`),
 
   obtener: (id: number) => pedir<Evaluacion>(`/evaluaciones/${id}`),

@@ -3,6 +3,7 @@ import { leerId } from "../../lib/errores";
 import { validar } from "../../middlewares/validar";
 import { esquemaPago, esquemaRangoIngresos, type DatosPago } from "./pagos.schemas";
 import {
+  anularDeuda,
   anularSaldo,
   eliminarPago,
   obtenerEstadoCuotas,
@@ -33,6 +34,12 @@ pagosRouter.get("/alumnos/:alumnoId/pagos", async (req, res) => {
 // POST /api/alumnos/:alumnoId/pagos  { tipo: "CUOTA" | "SALDO" | "OTRO", ... }
 pagosRouter.post("/alumnos/:alumnoId/pagos", validar(esquemaPago), async (req, res) => {
   res.status(201).json(await registrarPago(leerId(req.params.alumnoId), req.body as DatosPago));
+});
+
+// POST /api/alumnos/:alumnoId/anular-deuda  → las cuotas adeudadas quedan anuladas (no se cobran)
+pagosRouter.post("/alumnos/:alumnoId/anular-deuda", async (req, res) => {
+  await anularDeuda(leerId(req.params.alumnoId));
+  res.status(204).end();
 });
 
 // DELETE /api/pagos/:id

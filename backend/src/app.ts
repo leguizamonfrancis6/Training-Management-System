@@ -11,6 +11,7 @@ import { evaluacionesRouter } from "./modulos/evaluaciones/evaluaciones.routes";
 import { pagosRouter } from "./modulos/pagos/pagos.routes";
 import { planesRouter } from "./modulos/planes/planes.routes";
 import { pruebasRouter } from "./modulos/pruebas/pruebas.routes";
+import { rutinasRouter } from "./modulos/rutinas/rutinas.routes";
 
 // Mensajes de error de Zod en español para los casos sin mensaje propio.
 z.config(z.locales.es());
@@ -39,6 +40,7 @@ app.use("/api/pruebas", pruebasRouter);
 app.use("/api", evaluacionesRouter);
 app.use("/api/planes", planesRouter);
 app.use("/api", pagosRouter);
+app.use("/api", rutinasRouter);
 // (próximo módulo: panel)
 
 app.use("/api", rutaNoEncontrada);

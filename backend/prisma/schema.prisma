@@ -59,6 +59,12 @@ enum Modalidad {
   PRESENCIAL
   SEMIPRESENCIAL
   ONLINE
+  OTRO
+}
+
+enum TipoBloque {
+  MICROCICLOS_2_SEMANAS // bloque de 4 microciclos de 2 semanas
+  MICROCICLOS_1_SEMANA // bloque de 4 microciclos de 1 semana
 }
 
 enum MedioPago {
@@ -105,7 +111,6 @@ model Alumno {
   email                  String?
   perfil                 Perfil
   detallePerfil          String?
-  antecedentesDeportivos String?
   lesiones               String?
   molestias              String? // en pantalla: "Molestias/contracturas"
   actividadLaboral       String?
@@ -116,11 +121,13 @@ model Alumno {
   creadoEn               DateTime @default(now())
   actualizadoEn          DateTime @updatedAt
 
-  cambios      CambioAlumno[]
-  anotaciones  Anotacion[]
-  evaluaciones Evaluacion[]
-  cuotas       Cuota[]
-  pagos        Pago[]
+  cambios         CambioAlumno[]
+  anotaciones     Anotacion[]
+  evaluaciones    Evaluacion[]
+  cuotas          Cuota[]
+  pagos           Pago[]
+  asignacionesPlan AsignacionPlan[]
+  rutinas          Rutina[]
 
   @@index([apellido, nombre])
 }
@@ -163,6 +170,8 @@ model Prueba {
   nombre        String                @unique
   categoria     CategoriaPrueba
   unidad        String
+  // true = se carga por lado (izquierdo / derecho), ej.: movilidad de tobillo.
+  porLado       Boolean               @default(false)
   activa        Boolean               @default(true)
   resultados    ResultadoEvaluacion[]
   creadoEn      DateTime              @default(now())
@@ -173,12 +182,15 @@ model Evaluacion {
   id            Int                   @id @default(autoincrement())
   alumnoId      Int
   alumno        Alumno                @relation(fields: [alumnoId], references: [id])
+  // "Evaluación n°": numeración propia de cada alumno (1, 2, 3…). Se asigna al crearla y no cambia.
+  idEvaluacion  Int
   fecha         DateTime              @db.Date
   observaciones String?
   resultados    ResultadoEvaluacion[]
   creadoEn      DateTime              @default(now())
   actualizadoEn DateTime              @updatedAt
 
+  @@unique([alumnoId, idEvaluacion])
   @@index([alumnoId, fecha])
 }
 
@@ -202,20 +214,41 @@ model ResultadoEvaluacion {
 
 // ---------- Planes y pagos ----------
 
+// Hay un plan fijo por modalidad (Presencial, Semi presencial, Online, Otro), creado por el seed.
+// Agustín solo define su precio mensual.
 model Plan {
   id            Int       @id @default(autoincrement())
   nombre        String    @unique
-  modalidad     Modalidad
+  modalidad     Modalidad @unique
   precioMensual Decimal   @db.Decimal(12, 2)
   activo        Boolean   @default(true)
   alumnos       Alumno[]
   cuotas        Cuota[]
+  asignaciones  AsignacionPlan[]
   creadoEn      DateTime  @default(now())
   actualizadoEn DateTime  @updatedAt
 }
 
-// Se crea al registrar un pago: cubre desde la fecha de pago hasta un mes después.
+// Historial de planes de cada alumno: desde cuándo y hasta cuándo tuvo cada uno.
+// La asignación vigente es la que tiene hasta = null (y coincide con Alumno.planId).
+model AsignacionPlan {
+  id            Int       @id @default(autoincrement())
+  alumnoId      Int
+  alumno        Alumno    @relation(fields: [alumnoId], references: [id])
+  planId        Int
+  plan          Plan      @relation(fields: [planId], references: [id])
+  desde         DateTime  @db.Date
+  hasta         DateTime? @db.Date
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  @@index([alumnoId, desde])
+}
+
+// Un mes de entrenamiento (desde → vence). Se crea al registrar el pago, o con "anular deuda".
+// Las cuotas se encadenan: cada una empieza donde venció la anterior (o en la reactivación del alumno).
 // "importe" es lo que Agustín decide cobrar (por defecto, el precio del plan).
+// anulada = cuota adeudada que Agustín decidió no cobrar (importe 0, sin pagos).
 model Cuota {
   id            Int      @id @default(autoincrement())
   alumnoId      Int
@@ -225,6 +258,7 @@ model Cuota {
   desde         DateTime @db.Date
   vence         DateTime @db.Date
   importe       Decimal  @db.Decimal(12, 2)
+  anulada       Boolean  @default(false)
   pagos         Pago[]
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -249,4 +283,25 @@ model Pago {
   @@index([alumnoId])
   @@index([cuotaId])
   @@index([fecha])
+}
+
+// ---------- Rutinas ----------
+
+// Rutina de entrenamiento de un alumno, armada sobre la plantilla PDF (rutina.pdf).
+// No se guarda el PDF completo (pesa ~2,4 MB): se guarda lo escrito en cada campo y el PDF
+// se vuelve a armar con la plantilla al verlo o descargarlo.
+model Rutina {
+  id            Int        @id @default(autoincrement())
+  alumnoId      Int
+  alumno        Alumno     @relation(fields: [alumnoId], references: [id])
+  tipo          TipoBloque
+  valores       Json // { "untitled1": "Pérez, Juan", "untitled2": "Adaptación", ... }
+  // Copiados de la plantilla para mostrarlos en las listas sin abrir el PDF.
+  objetivo      String?
+  desde         String?
+  hasta         String?
+  creadoEn      DateTime   @default(now())
+  actualizadoEn DateTime   @updatedAt
+
+  @@index([alumnoId, creadoEn])
 }

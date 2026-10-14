@@ -8,8 +8,16 @@ const pruebas: Prisma.PruebaCreateInput[] = [
   { nombre: "IMTP (tirón isométrico a mitad de muslo)", categoria: "FUERZA", unidad: "N" },
   { nombre: "CMJ (salto con contramovimiento)", categoria: "POTENCIA", unidad: "cm" },
   { nombre: "DJ (salto en caída)", categoria: "POTENCIA", unidad: "cm" },
-  { nombre: "Movilidad de tobillo (rodilla a la pared)", categoria: "MOVILIDAD", unidad: "cm" },
+  { nombre: "Movilidad de tobillo (rodilla a la pared)", categoria: "MOVILIDAD", unidad: "cm", porLado: true },
   { nombre: "Rango de movimiento de cadera", categoria: "MOVILIDAD", unidad: "°" },
+];
+
+// Un plan fijo por modalidad. Se crean con precio 0: Agustín define cada precio desde Planes.
+const planes: Prisma.PlanCreateInput[] = [
+  { modalidad: "PRESENCIAL", nombre: "Presencial", precioMensual: 0 },
+  { modalidad: "SEMIPRESENCIAL", nombre: "Semi presencial", precioMensual: 0 },
+  { modalidad: "ONLINE", nombre: "Online", precioMensual: 0 },
+  { modalidad: "OTRO", nombre: "Otro", precioMensual: 0 },
 ];
 
 async function main() {
@@ -21,6 +29,12 @@ async function main() {
     });
   }
   console.log(`Catálogo de pruebas cargado (${pruebas.length} pruebas).`);
+
+  // update vacío: si el plan ya existe, no se le pisa el precio.
+  for (const plan of planes) {
+    await prisma.plan.upsert({ where: { modalidad: plan.modalidad }, update: {}, create: plan });
+  }
+  console.log(`Planes cargados (${planes.length}).`);
 }
 
 main()

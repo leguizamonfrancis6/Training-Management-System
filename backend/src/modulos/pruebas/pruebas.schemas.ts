@@ -13,6 +13,7 @@ export const esquemaPrueba = z.object({
     .trim()
     .min(1, "La unidad es obligatoria")
     .max(20, "Máximo 20 caracteres"),
+  porLado: z.boolean().default(false), // se carga por lado (izquierdo / derecho)
   activa: z.boolean().default(true),
 });
 

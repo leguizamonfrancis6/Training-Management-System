@@ -10,9 +10,6 @@ export default function ProximaEvaluacion({ datos }: { datos: DatosProximaEvalua
         Próxima evaluación: <strong>{formatearFecha(datos.fecha)}</strong>
       </span>
       <span className={claseProximaEvaluacion(datos)}>{textoDiasRestantes(datos)}</span>
-      <span className="texto-suave">
-        (calculada desde {datos.desde === "alta" ? "la fecha de alta" : "la última evaluación"})
-      </span>
     </p>
   );
 }

@@ -1,37 +1,58 @@
 import { ErrorHttp } from "../../lib/errores";
 import { prisma } from "../../lib/prisma";
-import type { DatosPlan } from "./planes.schemas";
+import { obtenerAlumno } from "../alumnos/alumnos.service";
+import type { DatosPrecioPlan } from "./planes.schemas";
 
-export function listarPlanes(incluirInactivos: boolean) {
-  return prisma.plan.findMany({
-    where: incluirInactivos ? undefined : { activo: true },
-    orderBy: { nombre: "asc" },
+const datosPlan = { select: { id: true, nombre: true, modalidad: true, precioMensual: true, activo: true } };
+
+// Alumnos activos con su plan actual y desde cuándo lo tienen.
+export async function listarAlumnosConPlan() {
+  const alumnos = await prisma.alumno.findMany({
+    where: { activo: true },
+    select: {
+      id: true,
+      nombre: true,
+      apellido: true,
+      plan: datosPlan,
+      asignacionesPlan: { where: { hasta: null }, select: { desde: true }, take: 1 },
+    },
+    orderBy: [{ apellido: "asc" }, { nombre: "asc" }],
   });
+  return alumnos.map(({ asignacionesPlan, ...alumno }) => ({
+    ...alumno,
+    desde: asignacionesPlan[0]?.desde ?? null,
+  }));
+}
+
+// Historial de planes de un alumno, del más reciente al más viejo.
+export async function obtenerHistorialPlanes(alumnoId: number) {
+  const alumno = await obtenerAlumno(alumnoId);
+  const asignaciones = await prisma.asignacionPlan.findMany({
+    where: { alumnoId },
+    include: { plan: datosPlan },
+    orderBy: [{ desde: "desc" }, { id: "desc" }],
+  });
+  return {
+    alumno: { id: alumno.id, nombre: alumno.nombre, apellido: alumno.apellido, activo: alumno.activo, plan: alumno.plan },
+    asignaciones,
+  };
+}
+
+// Los 4 planes fijos, en el orden de las modalidades (Presencial, Semi presencial, Online, Otro).
+export function listarPlanes() {
+  return prisma.plan.findMany({ orderBy: { modalidad: "asc" } });
 }
 
 export async function obtenerPlan(id: number) {
   const plan = await prisma.plan.findUnique({ where: { id } });
   if (!plan) {
-    throw new ErrorHttp(404, "Plan no encontrado");
+    throw new ErrorHttp(404, "Membresía no encontrada");
   }
   return plan;
 }
 
-async function verificarNombreLibre(nombre: string, idActual?: number) {
-  const otro = await prisma.plan.findFirst({ where: { nombre: { equals: nombre, mode: "insensitive" } } });
-  if (otro && otro.id !== idActual) {
-    throw new ErrorHttp(409, `Ya existe un plan llamado "${otro.nombre}"`);
-  }
-}
-
-export async function crearPlan(datos: DatosPlan) {
-  await verificarNombreLibre(datos.nombre);
-  return prisma.plan.create({ data: datos });
-}
-
 // Cambiar el precio no modifica las cuotas ya generadas: cada cuota guarda su propio importe.
-export async function actualizarPlan(id: number, datos: DatosPlan) {
+export async function actualizarPrecioPlan(id: number, datos: DatosPrecioPlan) {
   await obtenerPlan(id);
-  await verificarNombreLibre(datos.nombre, id);
-  return prisma.plan.update({ where: { id }, data: datos });
+  return prisma.plan.update({ where: { id }, data: { precioMensual: datos.precioMensual } });
 }
