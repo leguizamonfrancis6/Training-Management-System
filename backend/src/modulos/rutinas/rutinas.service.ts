@@ -4,13 +4,19 @@ import type { TipoBloque } from "@prisma/client";
 import { PDFDocument, PDFTextField } from "pdf-lib";
 import { env } from "../../config/env";
 import { ErrorHttp } from "../../lib/errores";
-import { fechaArgentina } from "../../lib/fechas";
+import { fechaArgentina, fechaDesdeTexto, hoyComoTexto, sumarMeses } from "../../lib/fechas";
 import { prisma } from "../../lib/prisma";
 import { obtenerAlumno } from "../alumnos/alumnos.service";
 
-// Campos de la plantilla actual que se muestran en las listas. Los nombres los puso el programa que armó
-// el PDF ("untitled…"); se identificaron por su posición en la hoja. Si se cambia la plantilla, revisarlos.
-const CAMPOS_RESUMEN = { objetivo: "untitled2", desde: "untitled3", hasta: "untitled4" };
+// Campo de la plantilla actual que se muestra en las listas. Los nombres los puso el programa que armó
+// el PDF ("untitled…"); se identificó por su posición en la hoja. Si se cambia la plantilla, revisarlo.
+const CAMPO_OBJETIVO = "untitled2";
+
+// Duración de cada tipo de bloque (decisión del usuario, 14-10-2026).
+export const MESES_POR_BLOQUE: Record<TipoBloque, number> = {
+  MICROCICLOS_2_SEMANAS: 2, // 4 microciclos de 2 semanas
+  MICROCICLOS_1_SEMANA: 1, // 4 microciclos de 1 semana
+};
 
 type Valores = Record<string, string>;
 
@@ -44,12 +50,7 @@ async function extraerValores(bytes: Uint8Array) {
 }
 
 function resumen(valores: Valores) {
-  const texto = (campo: string) => valores[campo]?.trim() || null;
-  return {
-    objetivo: texto(CAMPOS_RESUMEN.objetivo),
-    desde: texto(CAMPOS_RESUMEN.desde),
-    hasta: texto(CAMPOS_RESUMEN.hasta),
-  };
+  return { objetivo: valores[CAMPO_OBJETIVO]?.trim() || null };
 }
 
 // La fuente de los campos del PDF (Helvetica) no tiene todos los caracteres: se reemplazan los más comunes
@@ -145,7 +146,13 @@ export async function pdfDeRutina(id: number) {
 export async function crearRutina(alumnoId: number, tipo: TipoBloque, pdf: Uint8Array) {
   await obtenerAlumno(alumnoId);
   const valores = await extraerValores(pdf);
-  return prisma.rutina.create({ data: { alumnoId, tipo, valores, ...resumen(valores) }, select: datosRutina });
+  // La rutina empieza el día que se crea y dura lo que indica su tipo de bloque.
+  const desde = hoyComoTexto();
+  const hasta = sumarMeses(desde, MESES_POR_BLOQUE[tipo]);
+  return prisma.rutina.create({
+    data: { alumnoId, tipo, valores, ...resumen(valores), desde: fechaDesdeTexto(desde), hasta: fechaDesdeTexto(hasta) },
+    select: datosRutina,
+  });
 }
 
 export async function actualizarRutina(id: number, pdf: Uint8Array) {

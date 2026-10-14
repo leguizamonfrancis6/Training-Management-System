@@ -69,7 +69,7 @@ export default function RutinasAlumno() {
       {/* Al crear una rutina se elige el tipo de bloque y se abre la planilla */}
       {eligiendoTipo && (
         <div className="tarjeta seccion">
-          <h2>Nueva rutina: elegí el tipo de bloque</h2>
+          <h2>Elegí el tipo de rutina</h2>
           <div className="opciones-bloque">
             {(Object.keys(ETIQUETAS_TIPO_BLOQUE) as TipoBloque[]).map((tipo) => (
               <button

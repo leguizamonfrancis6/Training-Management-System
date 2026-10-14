@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { rutinasApi, type Rutina } from "../api/rutinas";
-import { formatearFechaHora } from "../utils/formato";
+import { formatearFecha, formatearFechaHora } from "../utils/formato";
 import { ETIQUETAS_TIPO_BLOQUE_CORTAS } from "../utils/rutinas";
 
 interface Props {
@@ -29,8 +29,8 @@ export default function ListaRutinas({ rutinas, onEliminar }: Props) {
               <td className="sin-salto">{formatearFechaHora(rutina.creadoEn).slice(0, 10)}</td>
               <td className="sin-salto">{ETIQUETAS_TIPO_BLOQUE_CORTAS[rutina.tipo]}</td>
               <td>{rutina.objetivo ?? <span className="texto-suave">—</span>}</td>
-              <td className="sin-salto">{rutina.desde ?? "—"}</td>
-              <td className="sin-salto">{rutina.hasta ?? "—"}</td>
+              <td className="sin-salto">{formatearFecha(rutina.desde)}</td>
+              <td className="sin-salto">{formatearFecha(rutina.hasta)}</td>
               <td className="sin-salto">
                 <Link to={`/rutinas/editar/${rutina.id}`} className="boton-link">
                   Abrir

@@ -296,10 +296,10 @@ model Rutina {
   alumno        Alumno     @relation(fields: [alumnoId], references: [id])
   tipo          TipoBloque
   valores       Json // { "untitled1": "Pérez, Juan", "untitled2": "Adaptación", ... }
-  // Copiados de la plantilla para mostrarlos en las listas sin abrir el PDF.
-  objetivo      String?
-  desde         String?
-  hasta         String?
+  objetivo      String? // copiado de la planilla para mostrarlo en las listas sin abrir el PDF
+  // Duración del bloque, calculada por el sistema: desde = día de creación; hasta = + 2 meses (4×2 semanas) o + 1 mes (4×1 semana).
+  desde         DateTime   @db.Date
+  hasta         DateTime   @db.Date
   creadoEn      DateTime   @default(now())
   actualizadoEn DateTime   @updatedAt
 

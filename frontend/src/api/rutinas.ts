@@ -6,9 +6,9 @@ export interface Rutina {
   id: number;
   alumnoId: number;
   tipo: TipoBloque;
-  objetivo: string | null; // copiados de la planilla, para mostrar en listas
-  desde: string | null;
-  hasta: string | null;
+  objetivo: string | null; // copiado de la planilla, para mostrar en listas
+  desde: string; // ISO: día de creación
+  hasta: string; // ISO: + 2 meses (4×2 semanas) o + 1 mes (4×1 semana)
   creadoEn: string; // ISO
   actualizadoEn: string;
 }

@@ -21,7 +21,7 @@ export default function Rutinas() {
   return (
     <section>
       <h1>Rutinas</h1>
-      <p className="texto-suave">Entrá a un alumno para ver sus rutinas o armarle una nueva.</p>
+      <p className="texto-suave">Seleccioná un alumno para ver sus rutinas o hacer una nueva.</p>
 
       <div className="filtros filtros-simple">
         <input
