@@ -61,6 +61,7 @@ El desarrollador es estudiante de la Tecnicatura en TI (UTN): explicar brevement
 
 ## Convenciones
 - **Terminología (14/10/2026):** en pantalla, lo que en el código es `Plan` (Presencial, Semi presencial, Online, Otro) se llama **"Membresía"** (femenino: "la membresía", "Sin membresía"). El código interno (modelo `Plan`, rutas `/planes` y `/api/planes`, variables) no se renombró. Todo texto nuevo visible debe decir "membresía".
+- **Estilo visual (15/10/2026):** texto base en semi negrita (600, nada más fino), bordes de 2px y líneas del gráfico gruesas (3,5), para que se lea bien en grabaciones de pantalla. Mantenerlo en pantallas nuevas.
 - Interfaz y mensajes en español (Argentina). Fechas en formato dd-mm-aaaa (con guiones; con hora: dd-mm-aaaa hh:mm); montos en pesos ($ 25.000,00).
 - Nombres de dominio en español (`Alumno`, `Pago`, `fechaNacimiento`).
 - Montos en `Decimal(12,2)`, nunca float. Fechas de calendario como `@db.Date` (sin hora).

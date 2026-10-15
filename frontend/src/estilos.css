@@ -25,6 +25,7 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color: var(--color-texto);
   background: var(--color-fondo);
+  font-weight: 600;
 }
 
 h1 {
@@ -45,7 +46,7 @@ h1 {
 
 .tarjeta {
   background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   border-radius: var(--radio);
   padding: 24px;
 }
@@ -57,7 +58,7 @@ h1 {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 16px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .campo input,
@@ -66,10 +67,10 @@ h1 {
 .filtros input,
 .filtros select {
   padding: 10px 12px;
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   border-radius: var(--radio);
   font: inherit;
-  font-weight: 400;
+  font-weight: 600;
   background: var(--color-superficie);
   color: inherit;
   width: 100%;
@@ -94,12 +95,12 @@ h1 {
 
 .ayuda {
   color: var(--color-texto-suave);
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .error-campo {
   color: var(--color-error);
-  font-weight: 400;
+  font-weight: 600;
 }
 
 /* Dos columnas en pantallas anchas, una en angostas. */
@@ -149,7 +150,7 @@ h1 {
 .boton-secundario {
   background: var(--color-superficie);
   color: var(--color-texto);
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
 }
 
 .boton-secundario:hover:not(:disabled) {
@@ -188,7 +189,7 @@ h1 {
 
 .encabezado {
   background: var(--color-superficie);
-  border-bottom: 1px solid var(--color-borde);
+  border-bottom: 2px solid var(--color-borde);
 }
 
 .encabezado-contenido {
@@ -295,7 +296,7 @@ h2 {
   border-radius: 999px;
   font-size: 0.85rem;
   background: var(--color-fondo);
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   color: var(--color-texto-suave);
 }
 
@@ -322,7 +323,7 @@ h2 {
 .tabla td {
   text-align: left;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--color-borde);
+  border-bottom: 2px solid var(--color-borde);
   vertical-align: top;
 }
 
@@ -424,7 +425,7 @@ h2 {
 .visor-pdf-marco {
   position: relative;
   height: 78vh;
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   border-radius: var(--radio);
   background: #cbd2d9;
   overflow: hidden;
@@ -485,8 +486,8 @@ h2 {
   content: "";
   width: 8px;
   height: 8px;
-  border-right: 2px solid var(--color-texto-suave);
-  border-bottom: 2px solid var(--color-texto-suave);
+  border-right: 3px solid var(--color-texto-suave);
+  border-bottom: 3px solid var(--color-texto-suave);
   transform: rotate(45deg);
   transition: transform 0.15s;
   flex-shrink: 0;
@@ -497,7 +498,7 @@ h2 {
 }
 
 .desplegable[open] summary {
-  border-bottom: 1px solid var(--color-borde);
+  border-bottom: 2px solid var(--color-borde);
   border-radius: var(--radio) var(--radio) 0 0;
 }
 
@@ -508,7 +509,7 @@ h2 {
 /* ---------- Anotaciones ---------- */
 
 .separador {
-  border-top: 1px solid var(--color-borde);
+  border-top: 2px solid var(--color-borde);
   margin: 8px 0 16px;
 }
 
@@ -522,7 +523,7 @@ h2 {
 
 .lista-encabezado select {
   padding: 6px 10px;
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   border-radius: var(--radio);
   font: inherit;
   background: var(--color-superficie);
@@ -535,7 +536,7 @@ h2 {
 }
 
 .anotacion {
-  border-top: 1px solid var(--color-borde);
+  border-top: 2px solid var(--color-borde);
   padding: 12px 0;
 }
 
@@ -613,7 +614,7 @@ h2 {
 }
 
 .fila-resultado {
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   border-radius: var(--radio);
   padding: 12px 12px 0;
   margin-bottom: 12px;
@@ -674,12 +675,12 @@ h2 {
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .pago-plan select {
   padding: 6px 10px;
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   border-radius: var(--radio);
   font: inherit;
   background: var(--color-superficie);
@@ -755,7 +756,7 @@ h2 {
 }
 
 .formulario-pago {
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   border-radius: var(--radio);
   padding: 16px;
   margin-bottom: 8px;
@@ -792,7 +793,7 @@ h2 {
   font-size: 0.9rem;
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   background: var(--color-superficie);
   color: var(--color-texto);
   cursor: pointer;
@@ -887,17 +888,18 @@ h2 {
 
 .grafico-grilla {
   stroke: var(--grafico-grilla);
-  stroke-width: 1;
+  stroke-width: 2;
 }
 
 .grafico-eje {
   fill: var(--color-texto-suave);
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .grafico-linea {
   fill: none;
-  stroke-width: 2;
+  stroke-width: 3.5;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
@@ -905,7 +907,7 @@ h2 {
 /* Anillo del color de la superficie para que los puntos se distingan sobre las líneas. */
 .grafico-punto {
   stroke: var(--color-superficie);
-  stroke-width: 2;
+  stroke-width: 2.5;
 }
 
 .grafico-zona {
@@ -915,7 +917,7 @@ h2 {
 
 .grafico-eje-numero {
   fill: var(--color-texto);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .subtitulo {
@@ -924,8 +926,8 @@ h2 {
 
 .grafico-rotulo {
   fill: var(--color-texto);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .grafico-leyenda {
@@ -939,7 +941,7 @@ h2 {
 .muestra-serie {
   display: inline-block;
   width: 14px;
-  height: 3px;
+  height: 5px;
   border-radius: 2px;
   vertical-align: middle;
   margin-right: 6px;
@@ -960,7 +962,7 @@ h2 {
 .buscador {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   border-radius: var(--radio);
   font: inherit;
   margin-bottom: 12px;
@@ -978,7 +980,7 @@ h2 {
   font: inherit;
   background: none;
   border: none;
-  border-top: 1px solid var(--color-borde);
+  border-top: 2px solid var(--color-borde);
   padding: 10px 8px;
   cursor: pointer;
   color: inherit;
@@ -995,7 +997,7 @@ h2 {
 }
 
 .plan-historial {
-  border-top: 1px solid var(--color-borde);
+  border-top: 2px solid var(--color-borde);
   padding: 12px 0;
 }
 
@@ -1023,7 +1025,7 @@ h2 {
 
 .edicion-precio input {
   padding: 8px 10px;
-  border: 1px solid var(--color-borde);
+  border: 2px solid var(--color-borde);
   border-radius: var(--radio);
   font: inherit;
   width: 160px;
