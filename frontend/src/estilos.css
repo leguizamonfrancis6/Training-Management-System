@@ -364,6 +364,36 @@ h2 {
   white-space: pre-line;
 }
 
+.ultimos-ingresos {
+  margin-top: 24px;
+}
+
+/* ---------- Panel principal (Inicio) ---------- */
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+
+.indicador {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+}
+
+.indicador-etiqueta {
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+}
+
+.indicador-valor {
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
 /* ---------- Rutinas ---------- */
 
 .opciones-bloque {

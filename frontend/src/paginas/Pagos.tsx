@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { pagosApi, type EstadoCuotaAlumno } from "../api/pagos";
+import UltimosIngresos from "../componentes/UltimosIngresos";
 import { formatearMoneda } from "../utils/formato";
 import {
   claseEstadoCuota,
@@ -10,13 +11,12 @@ import {
   textoVencimiento,
 } from "../utils/pagos";
 
-type Filtro = "TODOS" | "VENCIDA" | "POR_VENCER" | "CON_DEUDA" | "SIN_PAGOS" | "AL_DIA";
+type Filtro = "TODOS" | "VENCIDA" | "POR_VENCER" | "SIN_PAGOS" | "AL_DIA";
 
 const FILTROS: { valor: Filtro; etiqueta: string; cumple: (fila: EstadoCuotaAlumno) => boolean }[] = [
   { valor: "TODOS", etiqueta: "Todos", cumple: () => true },
   { valor: "VENCIDA", etiqueta: "Vencidas", cumple: (f) => f.estado === "VENCIDA" },
   { valor: "POR_VENCER", etiqueta: "Por vencer", cumple: (f) => f.estado === "POR_VENCER" },
-  { valor: "CON_DEUDA", etiqueta: "Con deuda", cumple: (f) => f.cantidadAdeudadas > 0 || Number(f.deudaTotal) > 0 },
   { valor: "SIN_PAGOS", etiqueta: "Sin pagos", cumple: (f) => f.estado === "SIN_PAGOS" },
   { valor: "AL_DIA", etiqueta: "Al día", cumple: (f) => f.estado === "AL_DIA" },
 ];
@@ -46,10 +46,7 @@ export default function Pagos() {
             Historial de Ingresos
           </Link>
           <Link to="/pagos/nuevo" className="boton">
-            Agregar un pago
-          </Link>
-          <Link to="/pagos/membresias" className="boton-secundario">
-            Membresías
+            Registrar un pago
           </Link>
           <Link to="/pagos/configuracion" className="boton-secundario">
             Configurar pagos
@@ -94,7 +91,7 @@ export default function Pagos() {
                   {visibles.map((fila) => (
                     <tr key={fila.id}>
                       <td>
-                        <Link to={`/alumnos/${fila.id}`}>
+                        <Link to={`/pagos/alumnos/${fila.id}`}>
                           {fila.apellido}, {fila.nombre}
                         </Link>
                       </td>
@@ -128,6 +125,8 @@ export default function Pagos() {
           )}
         </>
       )}
+
+      <UltimosIngresos />
     </section>
   );
 }

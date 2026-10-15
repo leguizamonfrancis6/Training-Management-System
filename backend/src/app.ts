@@ -9,6 +9,7 @@ import { anotacionesRouter } from "./modulos/anotaciones/anotaciones.routes";
 import { authRouter } from "./modulos/auth/auth.routes";
 import { evaluacionesRouter } from "./modulos/evaluaciones/evaluaciones.routes";
 import { pagosRouter } from "./modulos/pagos/pagos.routes";
+import { panelRouter } from "./modulos/panel/panel.routes";
 import { planesRouter } from "./modulos/planes/planes.routes";
 import { pruebasRouter } from "./modulos/pruebas/pruebas.routes";
 import { rutinasRouter } from "./modulos/rutinas/rutinas.routes";
@@ -41,7 +42,7 @@ app.use("/api", evaluacionesRouter);
 app.use("/api/planes", planesRouter);
 app.use("/api", pagosRouter);
 app.use("/api", rutinasRouter);
-// (próximo módulo: panel)
+app.use("/api/panel", panelRouter);
 
 app.use("/api", rutaNoEncontrada);
 app.use(manejarErrores);

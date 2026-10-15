@@ -63,13 +63,16 @@ export interface EstadoCuotaAlumno {
   deudaTotal: string;
 }
 
+// Pago con los datos del alumno (listas de ingresos).
+export type PagoConAlumno = Pago & { alumno: { id: number; nombre: string; apellido: string } };
+
 export interface ReporteIngresos {
   desde: string;
   hasta: string;
   cantidad: number;
   totales: { total: string; efectivo: string; transferencia: string; cuotas: string; otros: string };
   porMes: { mes: string; total: string; efectivo: string; transferencia: string }[]; // mes = "aaaa-mm"
-  pagos: (Pago & { alumno: { id: number; nombre: string; apellido: string } })[];
+  pagos: PagoConAlumno[];
 }
 
 // Tres tipos de pago; "tipo" indica cuáles son los demás campos.
@@ -91,6 +94,8 @@ export const pagosApi = {
   anularSaldo: (cuotaId: number) => pedir<unknown>(`/cuotas/${cuotaId}/anular-saldo`, { metodo: "POST" }),
 
   estadoCuotas: () => pedir<EstadoCuotaAlumno[]>("/pagos/estado-cuotas"),
+
+  ultimos: (cantidad: number) => pedir<PagoConAlumno[]>(`/pagos/ultimos?cantidad=${cantidad}`),
 
   ingresos: (desde: string, hasta: string) =>
     pedir<ReporteIngresos>(`/pagos/ingresos?desde=${desde}&hasta=${hasta}`),

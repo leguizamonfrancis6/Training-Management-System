@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { alumnosApi } from "../api/alumnos";
 import { pagosApi, type CuotaResumen, type Pago, type PagosAlumno as DatosPagos } from "../api/pagos";
@@ -21,10 +21,16 @@ const CANTIDAD_INICIAL = 3;
 interface Props {
   alumno: { id: number; nombre: string; apellido: string; telefono: string; activo: boolean };
   onCambio: () => void; // para que la ficha actualice el historial y el estado del alumno
+  enFicha?: boolean; // true (ficha): sección desplegable con "Ir a Pagos"; false: abierta, en la pantalla de Pagos
+}
+
+// Contenedor de la sección: desplegable en la ficha, tarjeta abierta en la pantalla de Pagos.
+function Contenedor({ enFicha, children }: { enFicha: boolean; children: ReactNode }) {
+  return enFicha ? <Desplegable titulo="Cuota y pagos">{children}</Desplegable> : <div className="tarjeta seccion">{children}</div>;
 }
 
 // Sección "Cuota y pagos" de la ficha del alumno.
-export default function PagosAlumno({ alumno, onCambio }: Props) {
+export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props) {
   const [datos, setDatos] = useState<DatosPagos | null>(null);
   const [error, setError] = useState("");
   const [registrando, setRegistrando] = useState(false);
@@ -100,9 +106,9 @@ export default function PagosAlumno({ alumno, onCambio }: Props) {
 
   if (!datos) {
     return (
-      <Desplegable titulo="Cuota y pagos">
+      <Contenedor enFicha={enFicha}>
         {error ? <p className="mensaje-error">{error}</p> : <p className="texto-suave">Cargando…</p>}
-      </Desplegable>
+      </Contenedor>
     );
   }
 
@@ -112,14 +118,16 @@ export default function PagosAlumno({ alumno, onCambio }: Props) {
   const visibles = verTodos ? pagos : pagos.slice(0, CANTIDAD_INICIAL);
 
   return (
-    <Desplegable titulo="Cuota y pagos">
+    <Contenedor enFicha={enFicha}>
       {error && <p className="mensaje-error">{error}</p>}
 
       <div className="fila-plan">
         <SelectorPlan alumnoId={alumno.id} planActual={plan} onCambio={planCambiado} />
-        <Link to="/pagos" className="link-discreto">
-          Ir a Pagos →
-        </Link>
+        {enFicha && (
+          <Link to="/pagos" className="link-discreto">
+            Ir a Pagos →
+          </Link>
+        )}
       </div>
 
       <div className="pago-estado">
@@ -239,6 +247,6 @@ export default function PagosAlumno({ alumno, onCambio }: Props) {
           )}
         </>
       )}
-    </Desplegable>
+    </Contenedor>
   );
 }

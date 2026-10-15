@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { leerId } from "../../lib/errores";
 import { validar } from "../../middlewares/validar";
-import { esquemaPago, esquemaRangoIngresos, type DatosPago } from "./pagos.schemas";
+import { esquemaPago, esquemaRangoIngresos, esquemaUltimosPagos, type DatosPago } from "./pagos.schemas";
 import {
   anularDeuda,
   anularSaldo,
   eliminarPago,
   obtenerEstadoCuotas,
   obtenerIngresos,
+  obtenerUltimosPagos,
   obtenerPagosAlumno,
   registrarPago,
 } from "./pagos.service";
@@ -18,6 +19,12 @@ export const pagosRouter = Router();
 // GET /api/pagos/estado-cuotas  → alumnos activos con el estado de su cuota (lo urgente primero)
 pagosRouter.get("/pagos/estado-cuotas", async (_req, res) => {
   res.json(await obtenerEstadoCuotas());
+});
+
+// GET /api/pagos/ultimos?cantidad=20  → los pagos más recientes
+pagosRouter.get("/pagos/ultimos", async (req, res) => {
+  const { cantidad } = esquemaUltimosPagos.parse(req.query);
+  res.json(await obtenerUltimosPagos(cantidad));
 });
 
 // GET /api/pagos/ingresos?desde=aaaa-mm-dd&hasta=aaaa-mm-dd

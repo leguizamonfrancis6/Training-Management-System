@@ -15,6 +15,7 @@ import Ingresos from "./paginas/Ingresos";
 import Inicio from "./paginas/Inicio";
 import Login from "./paginas/Login";
 import PagoNuevo from "./paginas/PagoNuevo";
+import PagosDeAlumno from "./paginas/PagosDeAlumno";
 import Pagos from "./paginas/Pagos";
 import Planes from "./paginas/Planes";
 import PlanesAlumno from "./paginas/PlanesAlumno";
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="evaluaciones/:evaluacionId/editar" element={<EvaluacionFormulario />} />
               <Route path="pagos" element={<Pagos />} />
               <Route path="pagos/nuevo" element={<PagoNuevo />} />
+              <Route path="pagos/alumnos/:id" element={<PagosDeAlumno />} />
               <Route
                 path="pagos/configuracion"
                 element={<GestionPlanes titulo="Configurar pagos" volverA="/pagos" etiquetaVolver="Pagos" />}

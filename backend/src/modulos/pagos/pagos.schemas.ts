@@ -48,6 +48,11 @@ export const esquemaPago = z.discriminatedUnion(
 
 export type DatosPago = z.infer<typeof esquemaPago>;
 
+// GET /api/pagos/ultimos?cantidad=20
+export const esquemaUltimosPagos = z.object({
+  cantidad: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 // GET /api/pagos/ingresos?desde=aaaa-mm-dd&hasta=aaaa-mm-dd
 export const esquemaRangoIngresos = z
   .object({

@@ -326,6 +326,15 @@ export async function obtenerEstadoCuotas() {
 
 // ---------- Reporte de ingresos ----------
 
+// Los pagos más recientes (de todos los alumnos), para la lista "Últimos ingresos" de Pagos.
+export function obtenerUltimosPagos(cantidad: number) {
+  return prisma.pago.findMany({
+    include: { alumno: { select: { id: true, nombre: true, apellido: true } } },
+    orderBy: [{ fecha: "desc" }, { id: "desc" }],
+    take: cantidad,
+  });
+}
+
 export async function obtenerIngresos(desde: string, hasta: string) {
   const pagos = await prisma.pago.findMany({
     where: { fecha: { gte: fechaDesdeTexto(desde), lte: fechaDesdeTexto(hasta) } },
