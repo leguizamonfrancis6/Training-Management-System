@@ -48,6 +48,12 @@ El desarrollador es estudiante de la Tecnicatura en TI (UTN): explicar brevement
 - Referencia: `Guia_Entrevista_Sistema_Entrenamiento.docx` (entrevista de requisitos con Agustín).
 - Si el usuario pide "repetime lo que dijiste" (o algo similar), leer `docs/propuesta-etapa1.md` y volver a presentarle la propuesta completa, con las decisiones tomadas al final.
 
+## Qué falta para producción (resumen dado al usuario el 14/10/2026)
+- **Imprescindible:** publicar en internet (servidor + base en la nube, dominio, HTTPS, build de producción; costo mensual a cargo del cliente); backups automáticos diarios de la base (y probar restaurar); seguridad mínima (límite de intentos de login, que Agustín pueda cambiar su contraseña); datos de salud = datos sensibles (Ley 25.326: consentimiento de los alumnos, posible inscripción ante la AAIP; que lo confirme Agustín con un profesional); cargar datos reales (importar planillas de Drive, plantilla de rutina vacía, precios); 1-2 semanas de prueba real con Agustín.
+- **Conveniente:** decisiones pendientes (historial de membresías, bloque de 1 semana, "Comienza el" en rutinas, editar pagos), pruebas automáticas, mejoras para celular, manual corto, respaldo en GitHub privado.
+- **Fuera de esta versión:** acceso de alumnos, turnos/asistencia, equipo de hockey, dispositivos, biblioteca de ejercicios.
+- Se le sugirió ofrecer un plan de mantenimiento mensual (servidor, backups, soporte). Ofreció armar un documento para Agustín con estado y próximos pasos.
+
 ## Stack
 - Backend: Node.js + TypeScript + Express, Prisma (ORM y migraciones) sobre PostgreSQL, Zod para validación.
 - Frontend: React + TypeScript con Vite, react-router, CSS plano.
