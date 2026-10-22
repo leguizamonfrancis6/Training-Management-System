@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { ErrorApi } from "../api/cliente";
 import { pruebasApi, type DatosPrueba, type Prueba } from "../api/pruebas";
 import Campo from "../componentes/Campo";
+import { useCarga } from "../hooks/useCarga";
 import { ETIQUETAS_CATEGORIA } from "../utils/evaluaciones";
 
 const PRUEBA_VACIA: DatosPrueba = { nombre: "", categoria: "", unidad: "", porLado: false, activa: true };
@@ -92,33 +93,19 @@ function FormularioPrueba({ inicial, textoBoton, onGuardar, onCancelar }: PropsF
 
 // Catálogo de pruebas de evaluación.
 export default function Pruebas() {
-  const [pruebas, setPruebas] = useState<Prueba[] | null>(null);
   const [incluirInactivas, setIncluirInactivas] = useState(false);
+  const { datos: pruebas, error, setError, recargar } = useCarga(() => pruebasApi.listar(incluirInactivas), [incluirInactivas]);
   const [editandoId, setEditandoId] = useState<number | null>(null);
-  const [error, setError] = useState("");
-
-  const cargar = useCallback(async () => {
-    try {
-      setPruebas(await pruebasApi.listar(incluirInactivas));
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron cargar las pruebas");
-    }
-  }, [incluirInactivas]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
 
   async function crear(datos: DatosPrueba) {
     await pruebasApi.crear(datos);
-    await cargar();
+    await recargar();
   }
 
   async function actualizar(id: number, datos: DatosPrueba) {
     await pruebasApi.actualizar(id, datos);
     setEditandoId(null);
-    await cargar();
+    await recargar();
   }
 
   // "Eliminar" en realidad desactiva: la evaluación deja de ofrecerse, pero no se borra
@@ -129,7 +116,7 @@ export default function Pruebas() {
     }
     try {
       await pruebasApi.actualizar(prueba.id, { ...prueba, activa: !prueba.activa });
-      await cargar();
+      await recargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo actualizar");
     }

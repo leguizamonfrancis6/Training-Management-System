@@ -3,7 +3,7 @@ import { PrismaClient, type Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Catálogo inicial de pruebas (Agustín podrá agregar o desactivar pruebas desde el sistema).
+// Catálogo inicial de pruebas (después se agregan o desactivan desde el sistema).
 const pruebas: Prisma.PruebaCreateInput[] = [
   { nombre: "IMTP (tirón isométrico a mitad de muslo)", categoria: "FUERZA", unidad: "N" },
   { nombre: "CMJ (salto con contramovimiento)", categoria: "POTENCIA", unidad: "cm" },
@@ -12,7 +12,7 @@ const pruebas: Prisma.PruebaCreateInput[] = [
   { nombre: "Rango de movimiento de cadera", categoria: "MOVILIDAD", unidad: "°" },
 ];
 
-// Un plan fijo por modalidad. Se crean con precio 0: Agustín define cada precio desde Planes.
+// Un plan fijo por modalidad. Se crean con precio 0: cada precio se define desde Pagos → Configurar pagos.
 const planes: Prisma.PlanCreateInput[] = [
   { modalidad: "PRESENCIAL", nombre: "Presencial", precioMensual: 0 },
   { modalidad: "SEMIPRESENCIAL", nombre: "Semi presencial", precioMensual: 0 },

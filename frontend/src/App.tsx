@@ -55,10 +55,7 @@ export default function App() {
               <Route path="pagos" element={<Pagos />} />
               <Route path="pagos/nuevo" element={<PagoNuevo />} />
               <Route path="pagos/alumnos/:id" element={<PagosDeAlumno />} />
-              <Route
-                path="pagos/configuracion"
-                element={<GestionPlanes titulo="Configurar pagos" volverA="/pagos" etiquetaVolver="Pagos" />}
-              />
+              <Route path="pagos/configuracion" element={<GestionPlanes />} />
               <Route path="ingresos" element={<Ingresos />} />
               <Route path="rutinas" element={<Rutinas />} />
               <Route path="rutinas/:alumnoId" element={<RutinasAlumno />} />

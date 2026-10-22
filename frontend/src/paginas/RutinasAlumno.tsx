@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { alumnosApi, type Alumno } from "../api/alumnos";
+import { alumnosApi } from "../api/alumnos";
 import { rutinasApi, type Rutina, type TipoBloque } from "../api/rutinas";
+import Cargando from "../componentes/Cargando";
 import ListaRutinas from "../componentes/ListaRutinas";
+import { useCarga } from "../hooks/useCarga";
 import { formatearFechaHora } from "../utils/formato";
 import { ETIQUETAS_TIPO_BLOQUE } from "../utils/rutinas";
 
@@ -10,39 +12,26 @@ import { ETIQUETAS_TIPO_BLOQUE } from "../utils/rutinas";
 export default function RutinasAlumno() {
   const alumnoId = Number(useParams().alumnoId);
   const navigate = useNavigate();
-  const [alumno, setAlumno] = useState<Alumno | null>(null);
-  const [rutinas, setRutinas] = useState<Rutina[] | null>(null);
+  const { datos, error, setError, recargar } = useCarga(
+    () => Promise.all([alumnosApi.obtener(alumnoId), rutinasApi.listar(alumnoId)]),
+    [alumnoId],
+  );
   const [eligiendoTipo, setEligiendoTipo] = useState(false);
-  const [error, setError] = useState("");
-
-  const cargar = useCallback(async () => {
-    try {
-      const [datosAlumno, lista] = await Promise.all([alumnosApi.obtener(alumnoId), rutinasApi.listar(alumnoId)]);
-      setAlumno(datosAlumno);
-      setRutinas(lista);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron cargar las rutinas");
-    }
-  }, [alumnoId]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
 
   async function eliminar(rutina: Rutina) {
     const fecha = formatearFechaHora(rutina.creadoEn).slice(0, 10);
     if (!window.confirm(`¿Eliminar la rutina creada el ${fecha}? No se puede deshacer.`)) return;
     try {
       await rutinasApi.eliminar(rutina.id);
-      await cargar();
+      await recargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo eliminar la rutina");
     }
   }
 
-  if (!alumno || !rutinas) {
-    return error ? <p className="mensaje-error">{error}</p> : <p className="texto-suave">Cargando…</p>;
-  }
+  if (!datos) return <Cargando error={error} />;
+
+  const [alumno, rutinas] = datos;
 
   return (
     <section>

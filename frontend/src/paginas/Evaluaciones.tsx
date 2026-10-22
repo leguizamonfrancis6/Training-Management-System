@@ -1,22 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
-import { evaluacionesApi, type ResumenEvaluacionAlumno } from "../api/evaluaciones";
+import { evaluacionesApi } from "../api/evaluaciones";
+import { useCarga } from "../hooks/useCarga";
 import { ETIQUETAS_PERFIL } from "../utils/alumnos";
 import { claseProximaEvaluacion, textoDiasRestantes } from "../utils/evaluaciones";
 import { coincideBusqueda, formatearFecha } from "../utils/formato";
 
 // Lista de alumnos activos con el estado de sus evaluaciones.
 export default function Evaluaciones() {
-  const [alumnos, setAlumnos] = useState<ResumenEvaluacionAlumno[] | null>(null);
+  const { datos: alumnos, error } = useCarga(() => evaluacionesApi.resumenAlumnos(), []);
   const [buscar, setBuscar] = useState("");
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    evaluacionesApi
-      .resumenAlumnos()
-      .then(setAlumnos)
-      .catch((err: Error) => setError(err.message));
-  }, []);
 
   const visibles = alumnos?.filter((a) => coincideBusqueda(`${a.nombre} ${a.apellido}`, buscar)) ?? [];
 

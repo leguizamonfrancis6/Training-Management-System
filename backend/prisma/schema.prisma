@@ -101,32 +101,32 @@ model Sesion {
 // ---------- Alumnos ----------
 
 model Alumno {
-  id                     Int      @id @default(autoincrement())
-  nombre                 String
-  apellido               String
-  dni                    String   @unique
-  fechaNacimiento        DateTime @db.Date
-  profesion              String
-  telefono               String
-  email                  String?
-  perfil                 Perfil
-  detallePerfil          String?
-  lesiones               String?
-  molestias              String? // en pantalla: "Molestias/contracturas"
-  actividadLaboral       String?
-  otrosDatos             String?
-  planId                 Int?
-  plan                   Plan?    @relation(fields: [planId], references: [id])
-  activo                 Boolean  @default(true)
-  creadoEn               DateTime @default(now())
-  actualizadoEn          DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  nombre           String
+  apellido         String
+  dni              String   @unique
+  fechaNacimiento  DateTime @db.Date
+  profesion        String
+  telefono         String
+  email            String?
+  perfil           Perfil
+  detallePerfil    String?
+  lesiones         String?
+  molestias        String? // en pantalla: "Molestias/contracturas"
+  actividadLaboral String?
+  otrosDatos       String?
+  planId           Int?
+  plan             Plan?    @relation(fields: [planId], references: [id])
+  activo           Boolean  @default(true)
+  creadoEn         DateTime @default(now())
+  actualizadoEn    DateTime @updatedAt
 
-  cambios         CambioAlumno[]
-  anotaciones     Anotacion[]
-  evaluaciones    Evaluacion[]
-  cuotas          Cuota[]
-  pagos           Pago[]
-  rutinas          Rutina[]
+  cambios      CambioAlumno[]
+  anotaciones  Anotacion[]
+  evaluaciones Evaluacion[]
+  cuotas       Cuota[]
+  pagos        Pago[]
+  rutinas      Rutina[]
 
   @@index([apellido, nombre])
 }
@@ -214,7 +214,7 @@ model ResultadoEvaluacion {
 // ---------- Planes y pagos ----------
 
 // Hay un plan fijo por modalidad (Presencial, Semi presencial, Online, Otro), creado por el seed.
-// Agustín solo define su precio mensual. Los cambios de plan de cada alumno quedan en CambioAlumno (campo "plan").
+// Solo se define su precio mensual. Los cambios de plan de cada alumno quedan en CambioAlumno (campo "plan").
 model Plan {
   id            Int       @id @default(autoincrement())
   nombre        String    @unique
@@ -228,8 +228,8 @@ model Plan {
 
 // Un mes de entrenamiento (desde → vence). Se crea al registrar el pago, o con "anular deuda".
 // Las cuotas se encadenan: cada una empieza donde venció la anterior (o en la reactivación del alumno).
-// "importe" es lo que Agustín decide cobrar (por defecto, el precio del plan). Se paga completa, con un solo pago.
-// anulada = cuota adeudada que Agustín decidió no cobrar (importe 0, sin pagos).
+// "importe" es lo que se decide cobrar (por defecto, el precio del plan). Se paga completa, con un solo pago.
+// anulada = cuota adeudada que se decidió no cobrar (importe 0, sin pagos).
 model Cuota {
   id            Int      @id @default(autoincrement())
   alumnoId      Int

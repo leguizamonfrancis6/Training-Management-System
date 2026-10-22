@@ -1,7 +1,7 @@
 import type { EstadoCuota, MedioPago } from "../api/pagos";
 import { formatearFecha, formatearMoneda } from "./formato";
 
-// Precio de un plan para mostrar. Los planes nacen con precio 0 hasta que Agustín lo define.
+// Precio de un plan para mostrar. Los planes nacen con precio 0 hasta que se define.
 export function textoPrecioPlan(precio: string) {
   return Number(precio) > 0 ? formatearMoneda(precio) : "sin precio definido";
 }
@@ -38,7 +38,6 @@ export function textoVencimiento(estado: EstadoCuota, vence: string | null, dias
   return `Hasta el ${fecha}`; // la etiqueta "Al día" ya está al lado
 }
 
-
 // Importe listo para editar en un campo de texto: "25000.5" → "25.000,50".
 export function importeParaEditar(importe: string | number) {
   return Number(importe).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -57,11 +56,11 @@ interface DatosAviso {
 }
 
 // Hace falta avisar si la cuota está vencida o por vencer, o si nunca pagó.
-export function requiereAviso({ estado }: DatosAviso) {
+export function requiereAviso(estado: EstadoCuota) {
   return estado !== "AL_DIA";
 }
 
-export function mensajeWhatsApp({ nombre, estado, vence, diasRestantes, deudaTotal, cantidadAdeudadas }: DatosAviso) {
+function mensajeWhatsApp({ nombre, estado, vence, diasRestantes, deudaTotal, cantidadAdeudadas }: DatosAviso) {
   const partes = [`Hola ${nombre}, ¿cómo estás?`];
   if (estado === "VENCIDA" && vence) partes.push(`Te recuerdo que tu cuota venció el ${formatearFecha(vence)}.`);
   if (estado === "POR_VENCER" && vence) {
@@ -75,7 +74,7 @@ export function mensajeWhatsApp({ nombre, estado, vence, diasRestantes, deudaTot
   return partes.join(" ");
 }
 
-// Link wa.me: abre WhatsApp con el mensaje escrito; Agustín lo revisa y lo envía.
+// Link wa.me: abre WhatsApp con el mensaje escrito, para revisarlo y enviarlo.
 // 549 = código de Argentina (54) + 9 (celulares).
 export function linkWhatsApp(datos: DatosAviso) {
   return `https://wa.me/549${datos.telefono}?text=${encodeURIComponent(mensajeWhatsApp(datos))}`;

@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import { alumnosApi, type Alumno, type CambioAlumno } from "../api/alumnos";
+import { alumnosApi } from "../api/alumnos";
 import AnotacionesAlumno from "../componentes/AnotacionesAlumno";
+import BotonVerTodos from "../componentes/BotonVerTodos";
+import Desplegable from "../componentes/Desplegable";
 import EvaluacionesAlumno from "../componentes/EvaluacionesAlumno";
 import PagosAlumno from "../componentes/PagosAlumno";
 import RutinasFicha from "../componentes/RutinasFicha";
+import { useCarga } from "../hooks/useCarga";
+import { useListaCorta } from "../hooks/useListaCorta";
 import { ETIQUETAS_CAMPO, ETIQUETAS_PERFIL, formatearValorCambio } from "../utils/alumnos";
 import { calcularEdad, formatearFecha, formatearFechaHora } from "../utils/formato";
-import Desplegable from "../componentes/Desplegable";
-
-// Cantidad de cambios del historial que se ven sin desplegar la lista.
-const CAMBIOS_INICIALES = 4;
 
 function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
@@ -23,29 +23,27 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode })
 
 export default function AlumnoFicha() {
   const idAlumno = Number(useParams().id);
-  const [alumno, setAlumno] = useState<Alumno | null>(null);
-  const [historial, setHistorial] = useState<CambioAlumno[]>([]);
-  const [error, setError] = useState("");
+  const { datos, error, setError, recargar } = useCarga(
+    () => Promise.all([alumnosApi.obtener(idAlumno), alumnosApi.historial(idAlumno)]),
+    [idAlumno],
+  );
+  const historial = useListaCorta(datos?.[1] ?? [], 4);
   const [procesando, setProcesando] = useState(false);
-  const [verTodoHistorial, setVerTodoHistorial] = useState(false);
 
-  const cargar = useCallback(async () => {
-    try {
-      const [datos, cambios] = await Promise.all([alumnosApi.obtener(idAlumno), alumnosApi.historial(idAlumno)]);
-      setAlumno(datos);
-      setHistorial(cambios);
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar el alumno");
-    }
-  }, [idAlumno]);
+  if (!datos) {
+    return error ? (
+      <>
+        <p className="mensaje-error">{error}</p>
+        <Link to="/alumnos">← Volver a alumnos</Link>
+      </>
+    ) : (
+      <p className="texto-suave">Cargando…</p>
+    );
+  }
 
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  const [alumno, cambios] = datos;
 
   async function alternarEstado() {
-    if (!alumno) return;
     const nombre = `${alumno.nombre} ${alumno.apellido}`;
     const pregunta = alumno.activo
       ? `¿Dar de baja a ${nombre}? Sus datos se conservan y se puede reactivar cuando quieras.`
@@ -55,23 +53,12 @@ export default function AlumnoFicha() {
     setProcesando(true);
     try {
       await alumnosApi.cambiarEstado(alumno.id, !alumno.activo);
-      await cargar();
+      await recargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cambiar el estado");
     } finally {
       setProcesando(false);
     }
-  }
-
-  if (!alumno) {
-    return error ? (
-      <>
-        <p className="mensaje-error">{error}</p>
-        <Link to="/alumnos">← Volver a alumnos</Link>
-      </>
-    ) : (
-      <p className="texto-suave">Cargando…</p>
-    );
   }
 
   return (
@@ -134,10 +121,10 @@ export default function AlumnoFicha() {
 
       <RutinasFicha alumnoId={alumno.id} />
 
-      <PagosAlumno alumno={alumno} onCambio={cargar} />
+      <PagosAlumno alumno={alumno} onCambio={recargar} />
 
       <Desplegable titulo="Historial de cambios">
-        {historial.length === 0 ? (
+        {cambios.length === 0 ? (
           <p className="texto-suave">Sin cambios registrados desde el alta.</p>
         ) : (
           <>
@@ -152,7 +139,7 @@ export default function AlumnoFicha() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(verTodoHistorial ? historial : historial.slice(0, CAMBIOS_INICIALES)).map((cambio) => (
+                  {historial.visibles.map((cambio) => (
                     <tr key={cambio.id}>
                       <td className="sin-salto">{formatearFechaHora(cambio.fecha)}</td>
                       <td>{ETIQUETAS_CAMPO[cambio.campo] ?? cambio.campo}</td>
@@ -163,15 +150,7 @@ export default function AlumnoFicha() {
                 </tbody>
               </table>
             </div>
-            {historial.length > CAMBIOS_INICIALES && (
-              <button
-                type="button"
-                className="boton-secundario boton-desplegar"
-                onClick={() => setVerTodoHistorial(!verTodoHistorial)}
-              >
-                {verTodoHistorial ? "Ver solo los últimos" : `Ver todos (${historial.length - CAMBIOS_INICIALES} más)`}
-              </button>
-            )}
+            <BotonVerTodos lista={historial} />
           </>
         )}
       </Desplegable>

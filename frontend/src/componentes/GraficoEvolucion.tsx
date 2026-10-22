@@ -28,7 +28,7 @@ const RADIO_ZONA_MOUSE = 16;
 // Cuántas evaluaciones se rotulan como máximo en el eje X (si hay más, se rotula una de cada tantas).
 const MAXIMO_ROTULOS_X = 6;
 
-export function colorDeLado(lado: Lado | null) {
+function colorDeLado(lado: Lado | null) {
   return lado === "DER" ? "var(--serie-2)" : "var(--serie-1)";
 }
 

@@ -1,30 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
-import { alumnosApi, type Alumno } from "../api/alumnos";
+import { alumnosApi } from "../api/alumnos";
+import Cargando from "../componentes/Cargando";
 import PagosAlumno from "../componentes/PagosAlumno";
+import { useCarga } from "../hooks/useCarga";
 
 // Pagos de un alumno, desde la pantalla Pagos: lo mismo que "Cuota y pagos" de la ficha, abierto.
 export default function PagosDeAlumno() {
   const alumnoId = Number(useParams().id);
-  const [alumno, setAlumno] = useState<Alumno | null>(null);
-  const [error, setError] = useState("");
+  // Se recarga después de cambios que afectan al alumno (ej.: "Anular deuda" con baja).
+  const { datos: alumno, error, recargar } = useCarga(() => alumnosApi.obtener(alumnoId), [alumnoId]);
 
-  // Se vuelve a pedir el alumno después de cambios que lo afectan (ej.: "Anular deuda" con baja).
-  const cargar = useCallback(async () => {
-    try {
-      setAlumno(await alumnosApi.obtener(alumnoId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar el alumno");
-    }
-  }, [alumnoId]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
-
-  if (!alumno) {
-    return error ? <p className="mensaje-error">{error}</p> : <p className="texto-suave">Cargando…</p>;
-  }
+  if (!alumno) return <Cargando error={error} />;
 
   return (
     <section>
@@ -43,7 +29,7 @@ export default function PagosDeAlumno() {
         </Link>
       </div>
 
-      <PagosAlumno alumno={alumno} onCambio={cargar} enFicha={false} />
+      <PagosAlumno alumno={alumno} onCambio={recargar} enFicha={false} />
     </section>
   );
 }

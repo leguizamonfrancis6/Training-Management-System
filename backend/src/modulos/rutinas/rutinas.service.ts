@@ -4,7 +4,7 @@ import type { TipoBloque } from "@prisma/client";
 import { PDFDocument, PDFTextField } from "pdf-lib";
 import { env } from "../../config/env";
 import { ErrorHttp } from "../../lib/errores";
-import { fechaArgentina, fechaDesdeTexto, hoyComoTexto, sumarMeses } from "../../lib/fechas";
+import { fechaArgentina, fechaDesdeTexto, formatearFechaTexto, hoyComoTexto, sumarMeses } from "../../lib/fechas";
 import { prisma } from "../../lib/prisma";
 import { obtenerAlumno } from "../alumnos/alumnos.service";
 
@@ -13,14 +13,14 @@ import { obtenerAlumno } from "../alumnos/alumnos.service";
 const CAMPO_OBJETIVO = "untitled2";
 
 // Duración de cada tipo de bloque (decisión del usuario, 14-10-2026).
-export const MESES_POR_BLOQUE: Record<TipoBloque, number> = {
+const MESES_POR_BLOQUE: Record<TipoBloque, number> = {
   MICROCICLOS_2_SEMANAS: 2, // 4 microciclos de 2 semanas
   MICROCICLOS_1_SEMANA: 1, // 4 microciclos de 1 semana
 };
 
 type Valores = Record<string, string>;
 
-// La plantilla se lee del disco cada vez: si Agustín la reemplaza, se usa la nueva sin reiniciar nada.
+// La plantilla se lee del disco cada vez: si se reemplaza el archivo, se usa la nueva sin reiniciar nada.
 // Nunca se escribe sobre ella.
 export async function leerPlantilla() {
   const ruta = path.resolve(process.cwd(), env.PLANTILLA_RUTINA);
@@ -134,10 +134,9 @@ export async function pdfDeRutina(id: number) {
   if (!rutina) {
     throw new ErrorHttp(404, "Rutina no encontrada");
   }
-  const fecha = fechaArgentina(rutina.creadoEn).split("-").reverse().join("-"); // dd-mm-aaaa
   return {
     bytes: await generarPdf(rutina.valores as Valores),
-    nombreArchivo: `Rutina ${rutina.alumno.apellido} ${rutina.alumno.nombre} ${fecha}.pdf`,
+    nombreArchivo: `Rutina ${rutina.alumno.apellido} ${rutina.alumno.nombre} ${formatearFechaTexto(fechaArgentina(rutina.creadoEn))}.pdf`,
   };
 }
 

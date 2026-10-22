@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { alumnosApi } from "../api/alumnos";
-import { pagosApi, type Pago, type PagosAlumno as DatosPagos } from "../api/pagos";
+import { pagosApi, type Pago } from "../api/pagos";
+import { useCarga } from "../hooks/useCarga";
+import { useListaCorta } from "../hooks/useListaCorta";
 import { formatearFecha, formatearMoneda } from "../utils/formato";
 import {
   claseEstadoCuota,
@@ -11,46 +13,30 @@ import {
   requiereAviso,
   textoVencimiento,
 } from "../utils/pagos";
+import BotonVerTodos from "./BotonVerTodos";
+import Cargando from "./Cargando";
+import Desplegable from "./Desplegable";
 import FormularioPago from "./FormularioPago";
 import SelectorPlan from "./SelectorPlan";
-import Desplegable from "./Desplegable";
-
-// Cantidad de pagos que se ven sin desplegar la lista.
-const CANTIDAD_INICIAL = 3;
 
 interface Props {
   alumno: { id: number; nombre: string; apellido: string; telefono: string; activo: boolean };
-  onCambio: () => void; // para que la ficha actualice el historial y el estado del alumno
-  enFicha?: boolean; // true (ficha): sección desplegable con "Ir a Pagos"; false: abierta, en la pantalla de Pagos
+  onCambio: () => void; // para que la pantalla actualice el historial y el estado del alumno
+  enFicha?: boolean; // true: sección desplegable de la ficha; false: abierta, en la pantalla de Pagos
 }
 
-// Contenedor de la sección: desplegable en la ficha, tarjeta abierta en la pantalla de Pagos.
 function Contenedor({ enFicha, children }: { enFicha: boolean; children: ReactNode }) {
   return enFicha ? <Desplegable titulo="Cuota y pagos">{children}</Desplegable> : <div className="tarjeta seccion">{children}</div>;
 }
 
-// Sección "Cuota y pagos" de la ficha del alumno.
+// Membresía, estado de la cuota, deuda y pagos de un alumno.
 export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props) {
-  const [datos, setDatos] = useState<DatosPagos | null>(null);
-  const [error, setError] = useState("");
+  const { datos, error, setError, recargar } = useCarga(() => pagosApi.obtener(alumno.id), [alumno.id]);
   const [registrando, setRegistrando] = useState(false);
-  const [verTodos, setVerTodos] = useState(false);
-
-  const cargar = useCallback(async () => {
-    try {
-      setDatos(await pagosApi.obtener(alumno.id));
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron cargar los pagos");
-    }
-  }, [alumno.id]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  const lista = useListaCorta(datos?.pagos ?? [], 3);
 
   async function planCambiado() {
-    await cargar();
+    await recargar();
     onCambio();
   }
 
@@ -70,7 +56,7 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
       ) {
         await alumnosApi.cambiarEstado(alumno.id, false);
       }
-      await cargar();
+      await recargar();
       onCambio();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo anular la deuda");
@@ -82,7 +68,7 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
     if (!window.confirm(pregunta)) return;
     try {
       await pagosApi.eliminar(pago.id);
-      await cargar();
+      await recargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo eliminar el pago");
     }
@@ -90,21 +76,19 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
 
   async function pagoRegistrado() {
     setRegistrando(false);
-    await cargar();
+    await recargar();
   }
 
   if (!datos) {
     return (
       <Contenedor enFicha={enFicha}>
-        {error ? <p className="mensaje-error">{error}</p> : <p className="texto-suave">Cargando…</p>}
+        <Cargando error={error} />
       </Contenedor>
     );
   }
 
   const { plan, situacion, pagos } = datos;
   const adeudadas = situacion.cuotasAdeudadas;
-  const aviso = { nombre: alumno.nombre, telefono: alumno.telefono, cantidadAdeudadas: adeudadas.length, ...situacion };
-  const visibles = verTodos ? pagos : pagos.slice(0, CANTIDAD_INICIAL);
   // Solo se puede eliminar el pago de la última cuota (las cuotas se encadenan) o uno por otro concepto.
   const sePuedeEliminar = (pago: Pago) => !pago.cuotaId || pago.cuotaId === situacion.ultimaCuota?.id;
 
@@ -124,8 +108,13 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
       <div className="pago-estado">
         <span className={claseEstadoCuota(situacion.estado)}>{ETIQUETAS_ESTADO_CUOTA[situacion.estado]}</span>
         {situacion.vence && <span>{textoVencimiento(situacion.estado, situacion.vence, situacion.diasRestantes)}</span>}
-        {requiereAviso(aviso) && (
-          <a className="boton-whatsapp" href={linkWhatsApp(aviso)} target="_blank" rel="noopener noreferrer">
+        {requiereAviso(situacion.estado) && (
+          <a
+            className="boton-whatsapp"
+            href={linkWhatsApp({ ...alumno, ...situacion, cantidadAdeudadas: adeudadas.length })}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Comunicarse vía WhatsApp
           </a>
         )}
@@ -138,7 +127,7 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
               Debe {adeudadas.length} {adeudadas.length === 1 ? "cuota" : "cuotas"}
               {situacion.precioCuotaAdeudada ? (
                 <>
-                  : <strong>{formatearMoneda(Number(situacion.precioCuotaAdeudada) * adeudadas.length)}</strong>
+                  : <strong>{formatearMoneda(situacion.deudaTotal)}</strong>
                 </>
               ) : (
                 <span className="texto-suave"> (la membresía no tiene precio definido)</span>
@@ -191,7 +180,7 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
                 </tr>
               </thead>
               <tbody>
-                {visibles.map((pago) => (
+                {lista.visibles.map((pago) => (
                   <tr key={pago.id}>
                     <td className="sin-salto">{formatearFecha(pago.fecha)}</td>
                     <td>
@@ -217,11 +206,7 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
               </tbody>
             </table>
           </div>
-          {pagos.length > CANTIDAD_INICIAL && (
-            <button type="button" className="boton-secundario boton-desplegar" onClick={() => setVerTodos(!verTodos)}>
-              {verTodos ? "Ver solo los últimos" : `Ver todos (${pagos.length - CANTIDAD_INICIAL} más)`}
-            </button>
-          )}
+          <BotonVerTodos lista={lista} />
         </>
       )}
     </Contenedor>

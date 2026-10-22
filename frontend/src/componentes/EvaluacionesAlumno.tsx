@@ -1,36 +1,32 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { evaluacionesApi, type ListadoEvaluaciones } from "../api/evaluaciones";
-import { armarSeries, formatearNumero, textoVariacion } from "../utils/evaluaciones";
+import { evaluacionesApi } from "../api/evaluaciones";
+import { useCarga } from "../hooks/useCarga";
+import { useListaCorta } from "../hooks/useListaCorta";
+import { armarGraficos, formatearNumero, nombreConLado, textoVariacion } from "../utils/evaluaciones";
 import { formatearFecha } from "../utils/formato";
-import ProximaEvaluacion from "./ProximaEvaluacion";
+import BotonVerTodos from "./BotonVerTodos";
+import Cargando from "./Cargando";
 import Desplegable from "./Desplegable";
-
-// Cantidad de pruebas que se ven en la tabla sin desplegarla.
-const CANTIDAD_INICIAL = 4;
+import ProximaEvaluacion from "./ProximaEvaluacion";
 
 // Resumen de evaluaciones dentro de la ficha: próxima evaluación y último valor de cada prueba
 // comparado con la medición anterior. El historial completo está en /alumnos/:id/evaluaciones.
 export default function EvaluacionesAlumno({ alumnoId }: { alumnoId: number }) {
-  const [datos, setDatos] = useState<ListadoEvaluaciones | null>(null);
-  const [verTodas, setVerTodas] = useState(false);
-  const [error, setError] = useState("");
+  const { datos, error } = useCarga(() => evaluacionesApi.listar(alumnoId), [alumnoId]);
 
-  useEffect(() => {
-    evaluacionesApi
-      .listar(alumnoId)
-      .then(setDatos)
-      .catch((err: Error) => setError(err.message));
-  }, [alumnoId]);
-
-  // Las pruebas medidas más recientemente primero (por la fecha de su último valor).
-  const series = (datos ? armarSeries(datos.evaluaciones) : []).sort((a, b) => {
-    const ultimaA = a.valores[a.valores.length - 1];
-    const ultimaB = b.valores[b.valores.length - 1];
-    return ultimaB.fecha.localeCompare(ultimaA.fecha) || ultimaB.evaluacionId - ultimaA.evaluacionId;
-  });
-  const visibles = verTodas ? series : series.slice(0, CANTIDAD_INICIAL);
-  const ocultas = series.length - CANTIDAD_INICIAL;
+  // Una fila por prueba (y lado); primero las medidas más recientemente.
+  const filas = armarGraficos(datos?.evaluaciones ?? [])
+    .flatMap((grafico) =>
+      grafico.series.map((serie) => ({
+        clave: `${grafico.pruebaId}-${serie.lado ?? ""}`,
+        nombre: nombreConLado(grafico.nombre, serie.lado),
+        unidad: grafico.unidad,
+        ultimo: serie.puntos[serie.puntos.length - 1],
+        anterior: serie.puntos.at(-2),
+      })),
+    )
+    .sort((a, b) => b.ultimo.fecha.localeCompare(a.ultimo.fecha) || b.ultimo.numero - a.ultimo.numero);
+  const lista = useListaCorta(filas, 4);
   const cantidad = datos?.evaluaciones.length ?? 0;
 
   return (
@@ -48,9 +44,8 @@ export default function EvaluacionesAlumno({ alumnoId }: { alumnoId: number }) {
         </div>
       </div>
 
-      {error && <p className="mensaje-error">{error}</p>}
       {!datos ? (
-        !error && <p className="texto-suave">Cargando…</p>
+        <Cargando error={error} />
       ) : (
         <>
           <ProximaEvaluacion datos={datos.proximaEvaluacion} />
@@ -70,46 +65,38 @@ export default function EvaluacionesAlumno({ alumnoId }: { alumnoId: number }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {visibles.map((serie) => {
-                      const ultimo = serie.valores[serie.valores.length - 1];
-                      const anterior = serie.valores[serie.valores.length - 2];
-                      return (
-                        <tr key={serie.clave}>
-                          <td>{serie.nombre}</td>
-                          <td className="sin-salto">
-                            <strong>
-                              {formatearNumero(ultimo.valor)} {serie.unidad}
-                            </strong>{" "}
-                            <span className="texto-suave">{formatearFecha(ultimo.fecha)}</span>
-                          </td>
-                          <td className="sin-salto">
-                            {anterior ? (
-                              <>
-                                {formatearNumero(anterior.valor)}{" "}
-                                <span className="texto-suave">{formatearFecha(anterior.fecha)}</span>
-                              </>
-                            ) : (
-                              <span className="texto-suave">—</span>
-                            )}
-                          </td>
-                          <td className="sin-salto">
-                            {anterior ? (
-                              textoVariacion(anterior.valor, ultimo.valor, serie.unidad)
-                            ) : (
-                              <span className="texto-suave">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {lista.visibles.map(({ clave, nombre, unidad, ultimo, anterior }) => (
+                      <tr key={clave}>
+                        <td>{nombre}</td>
+                        <td className="sin-salto">
+                          <strong>
+                            {formatearNumero(ultimo.valor)} {unidad}
+                          </strong>{" "}
+                          <span className="texto-suave">{formatearFecha(ultimo.fecha)}</span>
+                        </td>
+                        <td className="sin-salto">
+                          {anterior ? (
+                            <>
+                              {formatearNumero(anterior.valor)}{" "}
+                              <span className="texto-suave">{formatearFecha(anterior.fecha)}</span>
+                            </>
+                          ) : (
+                            <span className="texto-suave">—</span>
+                          )}
+                        </td>
+                        <td className="sin-salto">
+                          {anterior ? (
+                            textoVariacion(anterior.valor, ultimo.valor, unidad)
+                          ) : (
+                            <span className="texto-suave">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-              {ocultas > 0 && (
-                <button type="button" className="boton-secundario boton-desplegar" onClick={() => setVerTodas(!verTodas)}>
-                  {verTodas ? "Ver solo las últimas" : `Ver todas (${ocultas} más)`}
-                </button>
-              )}
+              <BotonVerTodos lista={lista} femenino />
             </>
           )}
         </>

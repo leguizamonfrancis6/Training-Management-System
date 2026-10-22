@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { alumnosApi, type Alumno } from "../api/alumnos";
-import { evaluacionesApi, type Evaluacion } from "../api/evaluaciones";
+import { alumnosApi } from "../api/alumnos";
+import { evaluacionesApi } from "../api/evaluaciones";
+import Cargando from "../componentes/Cargando";
+import { useCarga } from "../hooks/useCarga";
 import { ETIQUETAS_LADO, ETIQUETAS_ORIGEN, formatearNumero } from "../utils/evaluaciones";
 import { formatearFecha } from "../utils/formato";
 
@@ -9,22 +10,16 @@ import { formatearFecha } from "../utils/formato";
 export default function EvaluacionDetalle() {
   const evaluacionId = Number(useParams().evaluacionId);
   const navigate = useNavigate();
-  const [evaluacion, setEvaluacion] = useState<Evaluacion | null>(null);
-  const [alumno, setAlumno] = useState<Alumno | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    evaluacionesApi
-      .obtener(evaluacionId)
-      .then(async (datos) => {
-        setEvaluacion(datos);
-        setAlumno(await alumnosApi.obtener(datos.alumnoId));
-      })
-      .catch((err: Error) => setError(err.message));
+  const { datos, error, setError } = useCarga(async () => {
+    const evaluacion = await evaluacionesApi.obtener(evaluacionId);
+    return { evaluacion, alumno: await alumnosApi.obtener(evaluacion.alumnoId) };
   }, [evaluacionId]);
 
+  if (!datos) return <Cargando error={error} />;
+
+  const { evaluacion, alumno } = datos;
+
   async function eliminar() {
-    if (!evaluacion) return;
     const pregunta = `¿Eliminar la evaluación n° ${evaluacion.idEvaluacion} (${formatearFecha(evaluacion.fecha)}) con todos sus resultados? No se puede deshacer.`;
     if (!window.confirm(pregunta)) return;
     try {
@@ -33,10 +28,6 @@ export default function EvaluacionDetalle() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo eliminar");
     }
-  }
-
-  if (!evaluacion || !alumno) {
-    return error ? <p className="mensaje-error">{error}</p> : <p className="texto-suave">Cargando…</p>;
   }
 
   return (

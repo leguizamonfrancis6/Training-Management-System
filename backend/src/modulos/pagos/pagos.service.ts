@@ -15,12 +15,12 @@ import { obtenerAlumno } from "../alumnos/alumnos.service";
 import type { DatosPago } from "./pagos.schemas";
 
 // Con cuántos días de anticipación una cuota figura como "por vencer".
-export const DIAS_AVISO_VENCIMIENTO = 7;
+const DIAS_AVISO_VENCIMIENTO = 7;
 
 // Tope de seguridad de cuotas adeudadas que se calculan (10 años).
 const MAXIMO_CUOTAS_ADEUDADAS = 120;
 
-export type EstadoCuota = "SIN_PAGOS" | "AL_DIA" | "POR_VENCER" | "VENCIDA";
+type EstadoCuota ="SIN_PAGOS" | "AL_DIA" | "POR_VENCER" | "VENCIDA";
 
 // Datos del alumno que hacen falta para calcular la deuda.
 interface ContextoAlumno {
@@ -74,7 +74,7 @@ function inicioProximaCuota(ultimaVence: string | null, contexto: ContextoAlumno
 }
 
 // Cuotas mensuales sin pagar desde el inicio de la próxima cuota hasta hoy.
-// Solo para alumnos activos: por eso Agustín tiene que dar de baja a quien deja de venir.
+// Solo para alumnos activos: por eso hay que dar de baja a quien deja de venir.
 function calcularCuotasAdeudadas(inicio: string | null) {
   if (!inicio) return [];
   const hoy = hoyComoTexto();
@@ -92,7 +92,6 @@ function calcularCuotasAdeudadas(inicio: string | null) {
 // - Estado: según la última cuota. Vencida si su vencimiento ya pasó; por vencer si faltan 7 días o menos.
 // - Deuda: las cuotas mensuales sin pagar desde el vencimiento de la última cuota (solo alumnos activos),
 //   cada una al precio actual del plan.
-// La usa también el panel principal.
 export function calcularSituacion(cuota: Cuota | null, contexto: ContextoAlumno) {
   const ultimaCuota = cuota ? resumirCuota(cuota) : null;
 
@@ -213,8 +212,7 @@ export async function anularDeuda(alumnoId: number) {
   });
 }
 
-// Para corregir un pago cargado por error. Si era el único pago de su cuota, la cuota también se borra
-// (la cuota nace con el pago: sin pagos no tiene sentido).
+// Para corregir un pago cargado por error. Cada cuota tiene un solo pago, así que se borra junto con él.
 // Solo se puede borrar el pago de la última cuota: las cuotas se encadenan, y borrar una del medio
 // dejaría un mes sin cuota que nunca figuraría como adeudado.
 export async function eliminarPago(id: number) {
@@ -222,21 +220,15 @@ export async function eliminarPago(id: number) {
   if (!pago) {
     throw new ErrorHttp(404, "Pago no encontrado");
   }
-  if (pago.cuotaId) {
-    const [ultima] = await prisma.cuota.findMany({ where: { alumnoId: pago.alumnoId }, ...ultimaCuota });
-    if (ultima.id !== pago.cuotaId) {
-      throw new ErrorHttp(409, "Solo se puede eliminar el pago de la última cuota. Para corregir uno anterior, eliminá primero los más nuevos.");
-    }
+  if (!pago.cuotaId) {
+    await prisma.pago.delete({ where: { id } });
+    return;
   }
-  await prisma.$transaction(async (tx) => {
-    await tx.pago.delete({ where: { id } });
-    if (pago.cuotaId) {
-      const restantes = await tx.pago.count({ where: { cuotaId: pago.cuotaId } });
-      if (restantes === 0) {
-        await tx.cuota.delete({ where: { id: pago.cuotaId } });
-      }
-    }
-  });
+  const [ultima] = await prisma.cuota.findMany({ where: { alumnoId: pago.alumnoId }, ...ultimaCuota });
+  if (ultima.id !== pago.cuotaId) {
+    throw new ErrorHttp(409, "Solo se puede eliminar el pago de la última cuota. Para corregir uno anterior, eliminá primero los más nuevos.");
+  }
+  await prisma.$transaction([prisma.pago.delete({ where: { id } }), prisma.cuota.delete({ where: { id: pago.cuotaId } })]);
 }
 
 // ---------- Estado de cuotas de todos los alumnos activos ----------

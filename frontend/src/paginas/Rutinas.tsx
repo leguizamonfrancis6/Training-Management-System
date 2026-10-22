@@ -1,20 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
-import { rutinasApi, type AlumnoConRutinas } from "../api/rutinas";
+import { rutinasApi } from "../api/rutinas";
+import { useCarga } from "../hooks/useCarga";
 import { coincideBusqueda, formatearFecha } from "../utils/formato";
 
 // Lista de alumnos activos: al entrar a uno se ven sus rutinas y se crea una nueva.
 export default function Rutinas() {
-  const [alumnos, setAlumnos] = useState<AlumnoConRutinas[] | null>(null);
+  const { datos: alumnos, error } = useCarga(() => rutinasApi.alumnos(), []);
   const [buscar, setBuscar] = useState("");
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    rutinasApi
-      .alumnos()
-      .then(setAlumnos)
-      .catch((err: Error) => setError(err.message));
-  }, []);
 
   const visibles = alumnos?.filter((a) => coincideBusqueda(`${a.nombre} ${a.apellido}`, buscar)) ?? [];
 

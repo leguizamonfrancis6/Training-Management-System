@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { rutinasApi, type Rutina } from "../api/rutinas";
+import { rutinasApi } from "../api/rutinas";
+import { useCarga } from "../hooks/useCarga";
 import Desplegable from "./Desplegable";
 import ListaRutinas from "./ListaRutinas";
 
@@ -9,15 +9,7 @@ const CANTIDAD_EN_FICHA = 4;
 
 // Sección "Rutinas" de la ficha del alumno: sus últimas rutinas guardadas.
 export default function RutinasFicha({ alumnoId }: { alumnoId: number }) {
-  const [rutinas, setRutinas] = useState<Rutina[] | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    rutinasApi
-      .listar(alumnoId)
-      .then(setRutinas)
-      .catch((err: Error) => setError(err.message));
-  }, [alumnoId]);
+  const { datos: rutinas, error } = useCarga(() => rutinasApi.listar(alumnoId), [alumnoId]);
 
   return (
     <Desplegable titulo="Rutinas">

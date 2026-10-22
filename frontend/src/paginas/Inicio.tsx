@@ -1,6 +1,8 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { panelApi, type Panel } from "../api/panel";
+import type { ReactNode } from "react";
+import { panelApi } from "../api/panel";
+import Cargando from "../componentes/Cargando";
 import { useSesion } from "../componentes/Sesion";
+import { useCarga } from "../hooks/useCarga";
 
 function Indicador({ etiqueta, valor }: { etiqueta: string; valor: ReactNode }) {
   return (
@@ -14,15 +16,7 @@ function Indicador({ etiqueta, valor }: { etiqueta: string; valor: ReactNode }) 
 // Pantalla de Inicio: los números importantes del día de un vistazo.
 export default function Inicio() {
   const { usuario } = useSesion();
-  const [panel, setPanel] = useState<Panel | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    panelApi
-      .obtener()
-      .then(setPanel)
-      .catch((err: Error) => setError(err.message));
-  }, []);
+  const { datos: panel, error } = useCarga(() => panelApi.obtener(), []);
 
   const hoy = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
 
@@ -31,9 +25,8 @@ export default function Inicio() {
       <h1>Hola, {usuario?.nombre}</h1>
       <p className="texto-suave primera-mayuscula">{hoy}</p>
 
-      {error && <p className="mensaje-error">{error}</p>}
       {!panel ? (
-        !error && <p className="texto-suave">Cargando…</p>
+        <Cargando error={error} />
       ) : (
         <div className="indicadores">
           <Indicador etiqueta="Alumnos activos" valor={panel.alumnosActivos} />

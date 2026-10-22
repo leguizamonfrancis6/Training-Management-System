@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { pagosApi, type ReporteIngresos } from "../api/pagos";
-import { formatearFecha, formatearMoneda, hoyComoTexto } from "../utils/formato";
+import { fechaComoTexto, formatearFecha, formatearMoneda, hoyComoTexto } from "../utils/formato";
 import { ETIQUETAS_MEDIO } from "../utils/pagos";
 
-// Rangos rápidos: "aaaa-mm-dd" a partir de hoy.
 function rangoMesActual() {
   const hoy = hoyComoTexto();
   return { desde: `${hoy.slice(0, 7)}-01`, hasta: hoy };
@@ -12,11 +11,10 @@ function rangoMesActual() {
 
 function rangoMesAnterior() {
   const hoy = new Date();
-  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
-  const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
-  const texto = (fecha: Date) =>
-    `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
-  return { desde: texto(primerDia), hasta: texto(ultimoDia) };
+  return {
+    desde: fechaComoTexto(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)),
+    hasta: fechaComoTexto(new Date(hoy.getFullYear(), hoy.getMonth(), 0)),
+  };
 }
 
 function rangoAnioActual() {

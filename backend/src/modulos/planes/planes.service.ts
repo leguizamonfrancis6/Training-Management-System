@@ -7,7 +7,7 @@ export function listarPlanes() {
   return prisma.plan.findMany({ orderBy: { modalidad: "asc" } });
 }
 
-export async function obtenerPlan(id: number) {
+async function obtenerPlan(id: number) {
   const plan = await prisma.plan.findUnique({ where: { id } });
   if (!plan) {
     throw new ErrorHttp(404, "Membresía no encontrada");

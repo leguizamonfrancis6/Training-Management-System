@@ -1,40 +1,28 @@
-import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
-import { alumnosApi, type Alumno } from "../api/alumnos";
-import { evaluacionesApi, type ListadoEvaluaciones } from "../api/evaluaciones";
+import { alumnosApi } from "../api/alumnos";
+import { evaluacionesApi } from "../api/evaluaciones";
+import BotonVerTodos from "../componentes/BotonVerTodos";
+import Cargando from "../componentes/Cargando";
 import GraficoEvolucion from "../componentes/GraficoEvolucion";
 import ProximaEvaluacion from "../componentes/ProximaEvaluacion";
+import { useCarga } from "../hooks/useCarga";
+import { useListaCorta } from "../hooks/useListaCorta";
 import { armarGraficos } from "../utils/evaluaciones";
 import { formatearFecha } from "../utils/formato";
-
-// Cantidad de evaluaciones que se ven en la lista sin desplegarla.
-const CANTIDAD_INICIAL = 4;
 
 // Evaluaciones de un alumno: gráficos de evolución por prueba y lista de evaluaciones realizadas.
 export default function AlumnoEvaluaciones() {
   const alumnoId = Number(useParams().id);
-  const [alumno, setAlumno] = useState<Alumno | null>(null);
-  const [datos, setDatos] = useState<ListadoEvaluaciones | null>(null);
-  const [verTodas, setVerTodas] = useState(false);
-  const [error, setError] = useState("");
+  const { datos, error } = useCarga(
+    () => Promise.all([alumnosApi.obtener(alumnoId), evaluacionesApi.listar(alumnoId)]),
+    [alumnoId],
+  );
+  // La lista viene de la más reciente a la más vieja.
+  const lista = useListaCorta(datos?.[1].evaluaciones ?? [], 4);
 
-  useEffect(() => {
-    Promise.all([alumnosApi.obtener(alumnoId), evaluacionesApi.listar(alumnoId)])
-      .then(([datosAlumno, listado]) => {
-        setAlumno(datosAlumno);
-        setDatos(listado);
-      })
-      .catch((err: Error) => setError(err.message));
-  }, [alumnoId]);
+  if (!datos) return <Cargando error={error} />;
 
-  if (!alumno || !datos) {
-    return error ? <p className="mensaje-error">{error}</p> : <p className="texto-suave">Cargando…</p>;
-  }
-
-  const graficos = armarGraficos(datos.evaluaciones);
-  // La lista viene de la más reciente a la más vieja: se muestran las últimas y el resto se despliega.
-  const visibles = verTodas ? datos.evaluaciones : datos.evaluaciones.slice(0, CANTIDAD_INICIAL);
-  const ocultas = datos.evaluaciones.length - CANTIDAD_INICIAL;
+  const [alumno, { evaluaciones, proximaEvaluacion }] = datos;
 
   return (
     <section>
@@ -54,16 +42,16 @@ export default function AlumnoEvaluaciones() {
         </Link>
       </div>
 
-      <ProximaEvaluacion datos={datos.proximaEvaluacion} />
+      <ProximaEvaluacion datos={proximaEvaluacion} />
 
-      {datos.evaluaciones.length === 0 ? (
+      {evaluaciones.length === 0 ? (
         <p className="texto-suave">Todavía no tiene evaluaciones.</p>
       ) : (
         <>
           <h2>Evolución</h2>
           <p className="texto-suave">Pasá el mouse sobre un punto para ver su fecha y valor.</p>
           <div className="graficos">
-            {graficos.map((grafico) => (
+            {armarGraficos(evaluaciones).map((grafico) => (
               <GraficoEvolucion key={grafico.pruebaId} datos={grafico} />
             ))}
           </div>
@@ -82,7 +70,7 @@ export default function AlumnoEvaluaciones() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibles.map((evaluacion) => (
+                  {lista.visibles.map((evaluacion) => (
                     <tr key={evaluacion.id}>
                       <td className="sin-salto">
                         <Link to={`/evaluaciones/${evaluacion.id}`}>{evaluacion.idEvaluacion}</Link>
@@ -98,11 +86,7 @@ export default function AlumnoEvaluaciones() {
                 </tbody>
               </table>
             </div>
-            {ocultas > 0 && (
-              <button type="button" className="boton-secundario boton-desplegar" onClick={() => setVerTodas(!verTodas)}>
-                {verTodas ? "Ver solo las últimas" : `Ver todas (${ocultas} más)`}
-              </button>
-            )}
+            <BotonVerTodos lista={lista} femenino />
           </div>
         </>
       )}

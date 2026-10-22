@@ -19,7 +19,7 @@ export function formatearFechaHora(iso: string) {
 }
 
 // Minúsculas y sin tildes, para buscar: "Pérez" → "perez".
-export function normalizarTexto(texto: string) {
+function normalizarTexto(texto: string) {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
 
@@ -54,8 +54,11 @@ export function calcularEdad(fechaNacimiento: string) {
   return hoy.getFullYear() - anio - (yaCumplio ? 0 : 1);
 }
 
-// Hoy como "aaaa-mm-dd" (para el atributo max de los <input type="date">).
+// Fecha local como "aaaa-mm-dd" (el formato de los <input type="date">).
+export function fechaComoTexto(fecha: Date) {
+  return `${fecha.getFullYear()}-${dosDigitos(fecha.getMonth() + 1)}-${dosDigitos(fecha.getDate())}`;
+}
+
 export function hoyComoTexto() {
-  const hoy = new Date();
-  return `${hoy.getFullYear()}-${dosDigitos(hoy.getMonth() + 1)}-${dosDigitos(hoy.getDate())}`;
+  return fechaComoTexto(new Date());
 }

@@ -29,36 +29,6 @@ export function nombreConLado(nombre: string, lado: Lado | null) {
   return lado ? `${nombre} (${ETIQUETAS_LADO[lado].toLowerCase()})` : nombre;
 }
 
-// ---------- Comparación en el tiempo ----------
-
-// Una "serie" es la evolución de una prueba (y lado) a lo largo de las evaluaciones.
-export interface Serie {
-  clave: string;
-  nombre: string; // nombre de la prueba con el lado, ej.: "CMJ (izquierdo)"
-  unidad: string;
-  valores: { evaluacionId: number; fecha: string; valor: number }[]; // de la más vieja a la más nueva
-}
-
-export function armarSeries(evaluaciones: Evaluacion[]): Serie[] {
-  const series = new Map<string, Serie>();
-  const cronologicas = [...evaluaciones].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.idEvaluacion - b.idEvaluacion);
-
-  for (const evaluacion of cronologicas) {
-    for (const resultado of evaluacion.resultados) {
-      const clave = `${resultado.prueba.id}-${resultado.lado ?? ""}`;
-      let serie = series.get(clave);
-      if (!serie) {
-        serie = { clave, nombre: nombreConLado(resultado.prueba.nombre, resultado.lado), unidad: resultado.unidad, valores: [] };
-        series.set(clave, serie);
-      }
-      serie.unidad = resultado.unidad; // se muestra la unidad de la medición más reciente
-      serie.valores.push({ evaluacionId: evaluacion.id, fecha: evaluacion.fecha, valor: Number(resultado.valor) });
-    }
-  }
-
-  return [...series.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
-}
-
 // Diferencia entre dos mediciones, ej.: "▲ +2,5 cm (+8,3 %)".
 // No se colorea como "mejor" o "peor": según la prueba, subir puede ser bueno (salto) o malo (tiempo de sprint).
 export function textoVariacion(anterior: number, actual: number, unidad: string) {
@@ -119,7 +89,7 @@ export function armarGraficos(evaluaciones: Evaluacion[]): DatosGrafico[] {
         };
         graficos.set(resultado.prueba.id, grafico);
       }
-      grafico.unidad = resultado.unidad;
+      grafico.unidad = resultado.unidad; // se muestra la unidad de la medición más reciente
       let serie = grafico.series.find((s) => s.lado === resultado.lado);
       if (!serie) {
         serie = { lado: resultado.lado, puntos: [] };

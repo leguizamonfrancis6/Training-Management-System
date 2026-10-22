@@ -1,6 +1,6 @@
 // Crea el usuario administrador, o cambia su nombre y contraseña si el email ya existe.
 // Uso (desde la carpeta backend):  npm run crear-admin
-// También sirve si Agustín se olvida la contraseña: se vuelve a ejecutar con el mismo email.
+// También sirve si el usuario se olvida la contraseña: se vuelve a ejecutar con el mismo email.
 import readline from "node:readline";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";

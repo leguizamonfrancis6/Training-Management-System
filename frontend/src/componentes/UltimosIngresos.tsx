@@ -1,28 +1,16 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { pagosApi, type PagoConAlumno } from "../api/pagos";
+import { pagosApi } from "../api/pagos";
+import { useCarga } from "../hooks/useCarga";
+import { useListaCorta } from "../hooks/useListaCorta";
 import { formatearFecha, formatearMoneda } from "../utils/formato";
 import { ETIQUETAS_MEDIO } from "../utils/pagos";
+import BotonVerTodos from "./BotonVerTodos";
 
-// Cuántos ingresos se ven sin desplegar, y cuántos se traen como máximo (el resto, en Historial de Ingresos).
-const CANTIDAD_INICIAL = 3;
-const CANTIDAD_MAXIMA = 20;
-
-// Lista "Últimos ingresos" de la pantalla Pagos: los pagos más recientes de todos los alumnos.
+// Lista "Últimos ingresos" de la pantalla Pagos: los 20 pagos más recientes de todos los alumnos
+// (el resto, en Historial de Ingresos).
 export default function UltimosIngresos() {
-  const [pagos, setPagos] = useState<PagoConAlumno[] | null>(null);
-  const [verTodos, setVerTodos] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    pagosApi
-      .ultimos(CANTIDAD_MAXIMA)
-      .then(setPagos)
-      .catch((err: Error) => setError(err.message));
-  }, []);
-
-  const visibles = verTodos ? pagos ?? [] : (pagos ?? []).slice(0, CANTIDAD_INICIAL);
-  const ocultos = (pagos?.length ?? 0) - CANTIDAD_INICIAL;
+  const { datos: pagos, error } = useCarga(() => pagosApi.ultimos(20), []);
+  const lista = useListaCorta(pagos ?? [], 3);
 
   return (
     <div className="tarjeta seccion ultimos-ingresos">
@@ -45,7 +33,7 @@ export default function UltimosIngresos() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibles.map((pago) => (
+                  {lista.visibles.map((pago) => (
                     <tr key={pago.id}>
                       <td className="sin-salto">{formatearFecha(pago.fecha)}</td>
                       <td>
@@ -61,12 +49,8 @@ export default function UltimosIngresos() {
                 </tbody>
               </table>
             </div>
-            {ocultos > 0 && (
-              <button type="button" className="boton-secundario boton-desplegar" onClick={() => setVerTodos(!verTodos)}>
-                {verTodos ? "Ver solo los últimos" : `Ver más (${ocultos})`}
-              </button>
-            )}
-            {verTodos && (
+            <BotonVerTodos lista={lista} />
+            {lista.abierta && (
               <p className="nota">
                 <Link to="/ingresos" className="link-discreto">
                   Ver el historial completo en Historial de Ingresos →

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { pagosApi, type EstadoCuotaAlumno } from "../api/pagos";
 import UltimosIngresos from "../componentes/UltimosIngresos";
+import { useCarga } from "../hooks/useCarga";
 import { formatearMoneda } from "../utils/formato";
 import {
   claseEstadoCuota,
@@ -23,16 +24,8 @@ const FILTROS: { valor: Filtro; etiqueta: string; cumple: (fila: EstadoCuotaAlum
 
 // Estado de las cuotas de todos los alumnos activos. El backend ya los ordena: lo urgente primero.
 export default function Pagos() {
-  const [filas, setFilas] = useState<EstadoCuotaAlumno[] | null>(null);
+  const { datos: filas, error } = useCarga(() => pagosApi.estadoCuotas(), []);
   const [filtro, setFiltro] = useState<Filtro>("TODOS");
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    pagosApi
-      .estadoCuotas()
-      .then(setFilas)
-      .catch((err: Error) => setError(err.message));
-  }, []);
 
   const criterio = FILTROS.find((f) => f.valor === filtro)!;
   const visibles = filas?.filter(criterio.cumple) ?? [];
@@ -111,7 +104,7 @@ export default function Pagos() {
                         {Number(fila.deudaTotal) === 0 && fila.cantidadAdeudadas === 0 && <span className="texto-suave">—</span>}
                       </td>
                       <td className="sin-salto">
-                        {requiereAviso(fila) && (
+                        {requiereAviso(fila.estado) && (
                           <a className="boton-whatsapp" href={linkWhatsApp(fila)} target="_blank" rel="noopener noreferrer">
                             WhatsApp
                           </a>

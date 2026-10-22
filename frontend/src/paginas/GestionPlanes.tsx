@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { ErrorApi } from "../api/cliente";
 import { planesApi, type Plan } from "../api/planes";
+import { useCarga } from "../hooks/useCarga";
 import { formatearMoneda } from "../utils/formato";
 import { importeParaEditar } from "../utils/pagos";
 
@@ -25,8 +26,7 @@ function EdicionPrecio({ plan, onGuardado, onCancelar }: PropsEdicion) {
       await planesApi.actualizarPrecio(plan.id, precio);
       onGuardado();
     } catch (err) {
-      const mensaje = err instanceof ErrorApi ? err.campos.precioMensual?.[0] ?? err.message : "No se pudo guardar";
-      setError(mensaje);
+      setError(err instanceof ErrorApi ? err.campos.precioMensual?.[0] ?? err.message : "No se pudo guardar");
     } finally {
       setGuardando(false);
     }
@@ -53,43 +53,22 @@ function EdicionPrecio({ plan, onGuardado, onCancelar }: PropsEdicion) {
   );
 }
 
-// Precios de los 4 planes fijos (Presencial, Semi presencial, Online, Otro).
-// Se llega desde Pagos → "Configurar pagos" (y desde "Configurar precios" en Pagos → Membresías).
-interface PropsGestion {
-  titulo: string;
-  volverA: string;
-  etiquetaVolver: string;
-}
-
-export default function GestionPlanes({ titulo, volverA, etiquetaVolver }: PropsGestion) {
-  const [planes, setPlanes] = useState<Plan[] | null>(null);
+// Pagos → "Configurar pagos": precio de los 4 planes fijos (Presencial, Semi presencial, Online, Otro).
+export default function GestionPlanes() {
+  const { datos: planes, error, recargar } = useCarga(() => planesApi.listar(), []);
   const [editandoId, setEditandoId] = useState<number | null>(null);
-  const [error, setError] = useState("");
-
-  const cargar = useCallback(async () => {
-    try {
-      setPlanes(await planesApi.listar());
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron cargar las membresías");
-    }
-  }, []);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
 
   async function guardado() {
     setEditandoId(null);
-    await cargar();
+    await recargar();
   }
 
   return (
     <section>
-      <Link to={volverA} className="volver">
-        ← {etiquetaVolver}
+      <Link to="/pagos" className="volver">
+        ← Pagos
       </Link>
-      <h1>{titulo}</h1>
+      <h1>Configurar pagos</h1>
       <p className="texto-suave">
         Precio mensual de cada membresía. Es el importe que se propone al cobrar la cuota (se puede cambiar en cada pago).
         Cambiar un precio no modifica las cuotas ya cobradas.

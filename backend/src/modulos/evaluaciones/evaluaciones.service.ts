@@ -6,16 +6,15 @@ import { obtenerAlumno } from "../alumnos/alumnos.service";
 import type { DatosEvaluacion } from "./evaluaciones.schemas";
 
 // Cada cuántos meses se reevalúa según el perfil (decisión del 13-10-2026).
-export const MESES_REEVALUACION: Record<Perfil, number> = {
+const MESES_REEVALUACION: Record<Perfil, number> = {
   DEPORTIVO: 2,
   RECUPERACION: 2,
   SALUD: 4,
 };
 
 // Próxima evaluación = última evaluación (o, si nunca se evaluó, la fecha de alta) + plazo del perfil.
-// Se calcula siempre, no se guarda: si Agustín evalúa antes, el plazo se cuenta desde esa evaluación.
-// La usa también el panel principal.
-export function calcularProximaEvaluacion(perfil: Perfil, ultimaEvaluacion: Date | null, alta: Date) {
+// Se calcula siempre, no se guarda: si se evalúa antes, el plazo se cuenta desde esa evaluación.
+function calcularProximaEvaluacion(perfil: Perfil, ultimaEvaluacion: Date | null, alta: Date) {
   const base = ultimaEvaluacion ? textoDesdeFecha(ultimaEvaluacion) : fechaArgentina(alta);
   const fecha = sumarMeses(base, MESES_REEVALUACION[perfil]);
   return {

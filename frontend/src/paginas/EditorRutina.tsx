@@ -1,15 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { alumnosApi } from "../api/alumnos";
 import { rutinasApi, type TipoBloque } from "../api/rutinas";
 import VisorPdfEditable, { type ControlVisor } from "../componentes/VisorPdfEditable";
+import { useCarga } from "../hooks/useCarga";
 import { ETIQUETAS_TIPO_BLOQUE } from "../utils/rutinas";
-
-interface Datos {
-  alumno: { id: number; nombre: string; apellido: string };
-  tipo: TipoBloque;
-  pdf: Uint8Array;
-}
 
 // Completar una rutina sobre la planilla PDF.
 // - Nueva (/rutinas/:alumnoId/nueva?tipo=…): parte de la plantilla, que nunca se modifica.
@@ -21,23 +16,17 @@ export default function EditorRutina() {
   const navigate = useNavigate();
   const rutinaId = parametros.rutinaId ? Number(parametros.rutinaId) : null;
   const visor = useRef<ControlVisor>(null);
-
-  const [datos, setDatos] = useState<Datos | null>(null);
   const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      if (rutinaId) {
-        const [rutina, pdf] = await Promise.all([rutinasApi.obtener(rutinaId), rutinasApi.pdf(rutinaId)]);
-        setDatos({ alumno: rutina.alumno, tipo: rutina.tipo, pdf });
-      } else {
-        const tipo = busqueda.get("tipo") as TipoBloque | null;
-        if (!tipo || !(tipo in ETIQUETAS_TIPO_BLOQUE)) throw new Error("Falta elegir el tipo de bloque");
-        const [alumno, pdf] = await Promise.all([alumnosApi.obtener(Number(parametros.alumnoId)), rutinasApi.plantilla()]);
-        setDatos({ alumno, tipo, pdf });
-      }
-    })().catch((err: Error) => setError(err.message));
+  const { datos, error, setError } = useCarga(async () => {
+    if (rutinaId) {
+      const [rutina, pdf] = await Promise.all([rutinasApi.obtener(rutinaId), rutinasApi.pdf(rutinaId)]);
+      return { alumno: rutina.alumno, tipo: rutina.tipo, pdf };
+    }
+    const tipo = busqueda.get("tipo") as TipoBloque | null;
+    if (!tipo || !(tipo in ETIQUETAS_TIPO_BLOQUE)) throw new Error("Falta elegir el tipo de bloque");
+    const [alumno, pdf] = await Promise.all([alumnosApi.obtener(Number(parametros.alumnoId)), rutinasApi.plantilla()]);
+    return { alumno, tipo, pdf };
   }, [rutinaId, parametros.alumnoId, busqueda]);
 
   async function guardar() {

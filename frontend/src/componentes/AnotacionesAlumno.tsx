@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { anotacionesApi, type Anotacion, type DatosAnotacion, type TipoAnotacion } from "../api/anotaciones";
 import { ErrorApi } from "../api/cliente";
+import { useCarga } from "../hooks/useCarga";
+import { useListaCorta } from "../hooks/useListaCorta";
 import { ETIQUETAS_TIPO_ANOTACION } from "../utils/anotaciones";
 import { formatearFecha, hoyComoTexto } from "../utils/formato";
+import BotonVerTodos from "./BotonVerTodos";
 import Campo from "./Campo";
 import Desplegable from "./Desplegable";
-
-// Cantidad de anotaciones que se ven sin desplegar la lista.
-const CANTIDAD_INICIAL = 2;
 
 // Caracteres del detalle que se muestran antes de "Ver más".
 const LARGO_RESUMEN = 60;
@@ -16,8 +16,8 @@ function anotacionVacia(): DatosAnotacion {
   return { fecha: hoyComoTexto(), tipo: "OBSERVACION", detalle: "", motivo: "" };
 }
 
-// El campo "motivo" ya no se usa: no se carga ni se muestra. Las anotaciones viejas que lo tienen
-// lo conservan en la base (viaja sin cambios al editar).
+// El campo "motivo" ya no se carga ni se muestra, pero las anotaciones viejas que lo tienen
+// lo conservan (viaja sin cambios al editar).
 function datosDesdeAnotacion(anotacion: Anotacion): DatosAnotacion {
   return {
     fecha: anotacion.fecha.slice(0, 10),
@@ -34,7 +34,7 @@ interface PropsFormulario {
   onCancelar?: () => void;
 }
 
-// Formulario de una anotación: se usa para cargar una nueva y para editar una existente.
+// Se usa para cargar una anotación nueva y para editar una existente.
 function FormularioAnotacion({ inicial, textoBoton, onGuardar, onCancelar }: PropsFormulario) {
   const [datos, setDatos] = useState(inicial);
   const [guardando, setGuardando] = useState(false);
@@ -52,7 +52,7 @@ function FormularioAnotacion({ inicial, textoBoton, onGuardar, onCancelar }: Pro
     setGuardando(true);
     try {
       await onGuardar(datos);
-      // Al cargar una nueva, el formulario queda limpio para la siguiente (con la fecha de hoy).
+      // Al cargar una nueva, el formulario queda limpio para la siguiente.
       setDatos(anotacionVacia());
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar");
@@ -103,12 +103,13 @@ function FormularioAnotacion({ inicial, textoBoton, onGuardar, onCancelar }: Pro
 
 // Sección de anotaciones de entrenamiento dentro de la ficha del alumno.
 export default function AnotacionesAlumno({ alumnoId }: { alumnoId: number }) {
-  const [anotaciones, setAnotaciones] = useState<Anotacion[] | null>(null);
-  const [error, setError] = useState("");
+  const { datos: anotaciones, error, setError, recargar } = useCarga(() => anotacionesApi.listar(alumnoId), [alumnoId]);
   const [filtroTipo, setFiltroTipo] = useState<TipoAnotacion | "">("");
   const [editandoId, setEditandoId] = useState<number | null>(null);
-  const [verTodas, setVerTodas] = useState(false);
-  const [ampliadas, setAmpliadas] = useState<Set<number>>(new Set()); // anotaciones con el detalle completo a la vista
+  const [ampliadas, setAmpliadas] = useState<Set<number>>(new Set()); // con el detalle completo a la vista
+
+  const filtradas = anotaciones?.filter((a) => !filtroTipo || a.tipo === filtroTipo) ?? [];
+  const lista = useListaCorta(filtradas, 2);
 
   function alternarAmpliada(id: number) {
     setAmpliadas((anteriores) => {
@@ -119,48 +120,29 @@ export default function AnotacionesAlumno({ alumnoId }: { alumnoId: number }) {
     });
   }
 
-  const cargar = useCallback(async () => {
-    try {
-      setAnotaciones(await anotacionesApi.listar(alumnoId));
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudieron cargar las anotaciones");
-    }
-  }, [alumnoId]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
-
   async function crear(datos: DatosAnotacion) {
     await anotacionesApi.crear(alumnoId, datos);
-    await cargar();
+    await recargar();
   }
 
   async function actualizar(id: number, datos: DatosAnotacion) {
     await anotacionesApi.actualizar(id, datos);
     setEditandoId(null);
-    await cargar();
+    await recargar();
   }
 
   async function eliminar(anotacion: Anotacion) {
-    const pregunta = `¿Eliminar la anotación del ${formatearFecha(anotacion.fecha)}? No se puede deshacer.`;
-    if (!window.confirm(pregunta)) return;
+    if (!window.confirm(`¿Eliminar la anotación del ${formatearFecha(anotacion.fecha)}? No se puede deshacer.`)) return;
     try {
       await anotacionesApi.eliminar(anotacion.id);
-      await cargar();
+      await recargar();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo eliminar");
     }
   }
 
-  const filtradas = anotaciones?.filter((a) => !filtroTipo || a.tipo === filtroTipo) ?? [];
-  // Para que la ficha no se haga larga, se muestran solo las últimas; el resto se despliega con un botón.
-  const visibles = verTodas ? filtradas : filtradas.slice(0, CANTIDAD_INICIAL);
-
   return (
     <Desplegable titulo="Anotaciones de entrenamiento">
-
       <FormularioAnotacion inicial={anotacionVacia()} textoBoton="Agregar anotación" onGuardar={crear} />
 
       <div className="separador" />
@@ -192,7 +174,7 @@ export default function AnotacionesAlumno({ alumnoId }: { alumnoId: number }) {
           </div>
 
           <ul className="lista-anotaciones">
-            {visibles.map((anotacion) =>
+            {lista.visibles.map((anotacion) =>
               editandoId === anotacion.id ? (
                 <li key={anotacion.id} className="anotacion">
                   <FormularioAnotacion
@@ -233,11 +215,7 @@ export default function AnotacionesAlumno({ alumnoId }: { alumnoId: number }) {
 
           {filtradas.length === 0 && <p className="texto-suave">No hay anotaciones de ese tipo.</p>}
 
-          {filtradas.length > CANTIDAD_INICIAL && (
-            <button type="button" className="boton-secundario boton-desplegar" onClick={() => setVerTodas(!verTodas)}>
-              {verTodas ? "Ver solo las últimas" : `Ver todas (${filtradas.length - CANTIDAD_INICIAL} más)`}
-            </button>
-          )}
+          <BotonVerTodos lista={lista} femenino />
         </>
       )}
     </Desplegable>
