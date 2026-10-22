@@ -26,7 +26,9 @@ export default function Layout() {
             <NavLink to="/evaluaciones">Evaluaciones</NavLink>
           </nav>
           <div className="encabezado-usuario">
-            <span>{usuario?.nombre}</span>
+            <Link to="/cuenta/password" className="link-discreto" title="Cambiar contraseña">
+              {usuario?.nombre}
+            </Link>
             <button type="button" className="boton-secundario" onClick={() => cerrarSesion()}>
               Cerrar sesión
             </button>

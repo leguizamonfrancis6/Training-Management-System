@@ -9,7 +9,7 @@ import {
   sumarMeses,
   textoDesdeFecha,
 } from "../../lib/fechas";
-import { formatearMoneda, sumarMontos } from "../../lib/montos";
+import { formatearMoneda } from "../../lib/montos";
 import { prisma } from "../../lib/prisma";
 import { obtenerAlumno } from "../alumnos/alumnos.service";
 import type { DatosPago } from "./pagos.schemas";
@@ -22,8 +22,6 @@ const MAXIMO_CUOTAS_ADEUDADAS = 120;
 
 export type EstadoCuota = "SIN_PAGOS" | "AL_DIA" | "POR_VENCER" | "VENCIDA";
 
-type CuotaConPagos = Cuota & { pagos: { importe: Prisma.Decimal }[] };
-
 // Datos del alumno que hacen falta para calcular la deuda.
 interface ContextoAlumno {
   activo: boolean;
@@ -31,10 +29,11 @@ interface ContextoAlumno {
   precioPlan: Prisma.Decimal | null; // precio actual del plan (vale cada cuota adeudada)
 }
 
-// Para traer las cuotas con lo pagado, de la más nueva a la más vieja.
-const cuotasConPagos = {
-  include: { pagos: { select: { importe: true } } },
+// Para la situación alcanza con la última cuota: el estado sale de su vencimiento
+// y la deuda, de los meses sin pagar desde entonces.
+const ultimaCuota = {
   orderBy: [{ desde: "desc" }, { id: "desc" }],
+  take: 1,
 } satisfies Prisma.Alumno$cuotasArgs;
 
 // Para traer la última reactivación del alumno (queda en el historial de cambios).
@@ -57,16 +56,12 @@ function armarContexto(alumno: {
   };
 }
 
-function resumirCuota(cuota: CuotaConPagos) {
-  const pagado = sumarMontos(cuota.pagos.map((pago) => pago.importe));
-  const saldo = cuota.importe.minus(pagado);
+function resumirCuota(cuota: Cuota) {
   return {
     id: cuota.id,
     desde: textoDesdeFecha(cuota.desde),
     vence: textoDesdeFecha(cuota.vence),
     importe: cuota.importe,
-    pagado,
-    saldo: saldo.isNegative() ? new Prisma.Decimal(0) : saldo,
     anulada: cuota.anulada,
   };
 }
@@ -93,15 +88,13 @@ function calcularCuotasAdeudadas(inicio: string | null) {
   return adeudadas;
 }
 
-// Situación de pagos de un alumno a partir de sus cuotas (ordenadas de la más nueva a la más vieja).
+// Situación de pagos de un alumno a partir de su última cuota (null si nunca pagó).
 // - Estado: según la última cuota. Vencida si su vencimiento ya pasó; por vencer si faltan 7 días o menos.
 // - Deuda: las cuotas mensuales sin pagar desde el vencimiento de la última cuota (solo alumnos activos),
-//   cada una al precio actual del plan, más los saldos de cuotas pagadas en parte (si quedara alguno).
+//   cada una al precio actual del plan.
 // La usa también el panel principal.
-export function calcularSituacion(cuotas: CuotaConPagos[], contexto: ContextoAlumno) {
-  const resumidas = cuotas.map(resumirCuota);
-  const ultimaCuota = resumidas[0] ?? null;
-  const cuotasConSaldo = resumidas.filter((cuota) => cuota.saldo.gt(0));
+export function calcularSituacion(cuota: Cuota | null, contexto: ContextoAlumno) {
+  const ultimaCuota = cuota ? resumirCuota(cuota) : null;
 
   let estado: EstadoCuota = "SIN_PAGOS";
   let diasRestantes: number | null = null;
@@ -115,7 +108,6 @@ export function calcularSituacion(cuotas: CuotaConPagos[], contexto: ContextoAlu
   const inicio = inicioProximaCuota(ultimaCuota?.vence ?? null, contexto);
   const cuotasAdeudadas = calcularCuotasAdeudadas(inicio);
   const precio = contexto.precioPlan && contexto.precioPlan.gt(0) ? contexto.precioPlan : null;
-  const deudaCuotas = precio ? precio.times(cuotasAdeudadas.length) : new Prisma.Decimal(0);
 
   return {
     estado,
@@ -125,8 +117,7 @@ export function calcularSituacion(cuotas: CuotaConPagos[], contexto: ContextoAlu
     inicioProximaCuota: inicio,
     cuotasAdeudadas,
     precioCuotaAdeudada: precio, // null si el plan no tiene precio: se sabe cuántas cuotas debe pero no el monto
-    cuotasConSaldo,
-    deudaTotal: deudaCuotas.plus(sumarMontos(cuotasConSaldo.map((cuota) => cuota.saldo))),
+    deudaTotal: precio ? precio.times(cuotasAdeudadas.length) : new Prisma.Decimal(0),
   };
 }
 
@@ -134,11 +125,11 @@ export function calcularSituacion(cuotas: CuotaConPagos[], contexto: ContextoAlu
 async function cargarSituacion(alumnoId: number) {
   const alumno = await obtenerAlumno(alumnoId); // 404 si no existe
   const [cuotas, reactivaciones] = await Promise.all([
-    prisma.cuota.findMany({ where: { alumnoId }, ...cuotasConPagos }),
+    prisma.cuota.findMany({ where: { alumnoId }, ...ultimaCuota }),
     prisma.cambioAlumno.findMany({ ...ultimaReactivacion, where: { ...ultimaReactivacion.where, alumnoId } }),
   ]);
-  const situacion = calcularSituacion(cuotas, armarContexto({ ...alumno, cambios: reactivaciones }));
-  return { alumno, cuotas, situacion };
+  const situacion = calcularSituacion(cuotas[0] ?? null, armarContexto({ ...alumno, cambios: reactivaciones }));
+  return { alumno, situacion };
 }
 
 // ---------- Pagos de un alumno ----------
@@ -162,9 +153,6 @@ export async function registrarPago(alumnoId: number, datos: DatosPago) {
     if (!planId) {
       throw new ErrorHttp(400, "El alumno no tiene una membresía asignada. Asignale una antes de registrar la cuota.");
     }
-    if (datos.importe.gt(datos.importeCuota)) {
-      throw new ErrorHttp(400, "Lo que paga no puede superar el importe de la cuota");
-    }
     // La cuota cubre el período más viejo que debe (o el siguiente, si está al día).
     // Si nunca pagó, empieza en la fecha de pago.
     const desde = situacion.inicioProximaCuota ?? datos.fecha;
@@ -176,32 +164,12 @@ export async function registrarPago(alumnoId: number, datos: DatosPago) {
           planId,
           desde: fechaDesdeTexto(desde),
           vence: fechaDesdeTexto(sumarMeses(desde, 1)),
-          importe: datos.importeCuota,
+          importe: datos.importe,
         },
       });
       return tx.pago.create({
         data: { alumnoId, cuotaId: cuota.id, fecha, importe: datos.importe, medio: datos.medio, concepto: "Cuota mensual" },
       });
-    });
-  }
-
-  if (datos.tipo === "SALDO") {
-    const cuota = await prisma.cuota.findFirst({
-      where: { id: datos.cuotaId, alumnoId },
-      include: { pagos: { select: { importe: true } } },
-    });
-    if (!cuota) {
-      throw new ErrorHttp(404, "Cuota no encontrada");
-    }
-    const { saldo } = resumirCuota(cuota);
-    if (!saldo.gt(0)) {
-      throw new ErrorHttp(400, "Esa cuota no tiene saldo pendiente");
-    }
-    if (datos.importe.gt(saldo)) {
-      throw new ErrorHttp(400, `El pago supera el saldo pendiente (${formatearMoneda(saldo)})`);
-    }
-    return prisma.pago.create({
-      data: { alumnoId, cuotaId: cuota.id, fecha, importe: datos.importe, medio: datos.medio, concepto: "Saldo de cuota" },
     });
   }
 
@@ -247,10 +215,18 @@ export async function anularDeuda(alumnoId: number) {
 
 // Para corregir un pago cargado por error. Si era el único pago de su cuota, la cuota también se borra
 // (la cuota nace con el pago: sin pagos no tiene sentido).
+// Solo se puede borrar el pago de la última cuota: las cuotas se encadenan, y borrar una del medio
+// dejaría un mes sin cuota que nunca figuraría como adeudado.
 export async function eliminarPago(id: number) {
   const pago = await prisma.pago.findUnique({ where: { id } });
   if (!pago) {
     throw new ErrorHttp(404, "Pago no encontrado");
+  }
+  if (pago.cuotaId) {
+    const [ultima] = await prisma.cuota.findMany({ where: { alumnoId: pago.alumnoId }, ...ultimaCuota });
+    if (ultima.id !== pago.cuotaId) {
+      throw new ErrorHttp(409, "Solo se puede eliminar el pago de la última cuota. Para corregir uno anterior, eliminá primero los más nuevos.");
+    }
   }
   await prisma.$transaction(async (tx) => {
     await tx.pago.delete({ where: { id } });
@@ -261,20 +237,6 @@ export async function eliminarPago(id: number) {
       }
     }
   });
-}
-
-// Saldo de una cuota pagada en parte (caso que ya no se genera desde la pantalla, se conserva por si existe):
-// el importe de la cuota pasa a ser lo efectivamente pagado.
-export async function anularSaldo(cuotaId: number) {
-  const cuota = await prisma.cuota.findUnique({ where: { id: cuotaId }, include: { pagos: { select: { importe: true } } } });
-  if (!cuota) {
-    throw new ErrorHttp(404, "Cuota no encontrada");
-  }
-  const { pagado, saldo } = resumirCuota(cuota);
-  if (!saldo.gt(0)) {
-    throw new ErrorHttp(400, "Esa cuota no tiene saldo pendiente");
-  }
-  return prisma.cuota.update({ where: { id: cuotaId }, data: { importe: pagado } });
 }
 
 // ---------- Estado de cuotas de todos los alumnos activos ----------
@@ -292,13 +254,13 @@ export async function obtenerEstadoCuotas() {
       telefono: true,
       activo: true,
       plan: { select: { nombre: true, precioMensual: true } },
-      cuotas: cuotasConPagos,
+      cuotas: ultimaCuota,
       cambios: ultimaReactivacion,
     },
   });
 
   const filas = alumnos.map((alumno) => {
-    const situacion = calcularSituacion(alumno.cuotas, armarContexto(alumno));
+    const situacion = calcularSituacion(alumno.cuotas[0] ?? null, armarContexto(alumno));
     return {
       id: alumno.id,
       nombre: alumno.nombre,

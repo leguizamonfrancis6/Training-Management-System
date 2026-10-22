@@ -10,7 +10,7 @@ interface Props {
 }
 
 // Lista desplegable para asignar o cambiar el plan de un alumno (se guarda al elegir).
-// Se usa en la ficha (Cuota y pagos) y en Planes.
+// Se usa en la sección "Cuota y pagos" (ficha del alumno y sus pagos).
 export default function SelectorPlan({ alumnoId, planActual, onCambio }: Props) {
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [guardando, setGuardando] = useState(false);
@@ -44,9 +44,6 @@ export default function SelectorPlan({ alumnoId, planActual, onCambio }: Props) 
     }
   }
 
-  // Si el plan actual fue eliminado, igual se muestra en la lista para que el select lo refleje.
-  const opciones = planActual && !planes.some((p) => p.id === planActual.id) ? [planActual, ...planes] : planes;
-
   return (
     <div className="pago-plan">
       <label htmlFor={`plan-alumno-${alumnoId}`}>Membresía:</label>
@@ -57,7 +54,7 @@ export default function SelectorPlan({ alumnoId, planActual, onCambio }: Props) 
         disabled={guardando}
       >
         <option value="">Sin membresía</option>
-        {opciones.map((plan) => (
+        {planes.map((plan) => (
           <option key={plan.id} value={plan.id}>
             {plan.nombre} — {textoPrecioPlan(plan.precioMensual)}
           </option>

@@ -10,8 +10,6 @@ export interface CuotaResumen {
   desde: string; // "aaaa-mm-dd"
   vence: string; // "aaaa-mm-dd"
   importe: string;
-  pagado: string;
-  saldo: string;
   anulada: boolean;
 }
 
@@ -29,7 +27,6 @@ export interface Situacion {
   inicioProximaCuota: string | null; // dónde empieza la próxima cuota; null = en la fecha de pago
   cuotasAdeudadas: PeriodoAdeudado[]; // meses sin pagar desde el último vencimiento (solo alumnos activos)
   precioCuotaAdeudada: string | null; // precio de cada cuota adeudada; null si el plan no tiene precio
-  cuotasConSaldo: CuotaResumen[]; // cuotas pagadas en parte (ya no se generan, se conservan por si existen)
   deudaTotal: string;
 }
 
@@ -75,10 +72,9 @@ export interface ReporteIngresos {
   pagos: PagoConAlumno[];
 }
 
-// Tres tipos de pago; "tipo" indica cuáles son los demás campos.
+// Dos tipos de pago; "tipo" indica cuáles son los demás campos.
 export type DatosPago =
-  | { tipo: "CUOTA"; fecha: string; importeCuota: string; importe: string; medio: MedioPago }
-  | { tipo: "SALDO"; cuotaId: number; fecha: string; importe: string; medio: MedioPago }
+  | { tipo: "CUOTA"; fecha: string; importe: string; medio: MedioPago }
   | { tipo: "OTRO"; fecha: string; importe: string; concepto: string; medio: MedioPago };
 
 export const pagosApi = {
@@ -90,8 +86,6 @@ export const pagosApi = {
   eliminar: (id: number) => pedir<void>(`/pagos/${id}`, { metodo: "DELETE" }),
 
   anularDeuda: (alumnoId: number) => pedir<void>(`/alumnos/${alumnoId}/anular-deuda`, { metodo: "POST" }),
-
-  anularSaldo: (cuotaId: number) => pedir<unknown>(`/cuotas/${cuotaId}/anular-saldo`, { metodo: "POST" }),
 
   estadoCuotas: () => pedir<EstadoCuotaAlumno[]>("/pagos/estado-cuotas"),
 

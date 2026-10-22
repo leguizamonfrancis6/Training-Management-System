@@ -4,7 +4,6 @@ import { validar } from "../../middlewares/validar";
 import { esquemaPago, esquemaRangoIngresos, esquemaUltimosPagos, type DatosPago } from "./pagos.schemas";
 import {
   anularDeuda,
-  anularSaldo,
   eliminarPago,
   obtenerEstadoCuotas,
   obtenerIngresos,
@@ -38,7 +37,7 @@ pagosRouter.get("/alumnos/:alumnoId/pagos", async (req, res) => {
   res.json(await obtenerPagosAlumno(leerId(req.params.alumnoId)));
 });
 
-// POST /api/alumnos/:alumnoId/pagos  { tipo: "CUOTA" | "SALDO" | "OTRO", ... }
+// POST /api/alumnos/:alumnoId/pagos  { tipo: "CUOTA" | "OTRO", ... }
 pagosRouter.post("/alumnos/:alumnoId/pagos", validar(esquemaPago), async (req, res) => {
   res.status(201).json(await registrarPago(leerId(req.params.alumnoId), req.body as DatosPago));
 });
@@ -53,9 +52,4 @@ pagosRouter.post("/alumnos/:alumnoId/anular-deuda", async (req, res) => {
 pagosRouter.delete("/pagos/:id", async (req, res) => {
   await eliminarPago(leerId(req.params.id));
   res.status(204).end();
-});
-
-// POST /api/cuotas/:id/anular-saldo
-pagosRouter.post("/cuotas/:id/anular-saldo", async (req, res) => {
-  res.json(await anularSaldo(leerId(req.params.id)));
 });

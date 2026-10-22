@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { ErrorApi } from "../api/cliente";
-import { pagosApi, type CuotaResumen, type DatosPago, type MedioPago } from "../api/pagos";
+import { pagosApi, type DatosPago, type MedioPago } from "../api/pagos";
 import type { Plan } from "../api/planes";
-import { formatearFecha, formatearMoneda, hoyComoTexto, sumarMeses } from "../utils/formato";
+import { formatearFecha, hoyComoTexto, sumarMeses } from "../utils/formato";
 import { ETIQUETAS_MEDIO, importeParaEditar, textoPrecioPlan } from "../utils/pagos";
 import Campo from "./Campo";
 
@@ -11,34 +11,20 @@ type TipoPago = DatosPago["tipo"];
 interface Props {
   alumnoId: number;
   plan: Plan | null;
-  cuotasConSaldo: CuotaResumen[];
   inicioCuota: string | null; // dónde empieza la cuota que se paga; null = en la fecha de pago
   cantidadAdeudadas: number;
   onGuardado: () => void;
   onCancelar: () => void;
 }
 
-// Registro de un pago: nueva cuota, saldo de una cuota anterior u otro concepto.
-export default function FormularioPago({
-  alumnoId,
-  plan,
-  cuotasConSaldo,
-  inicioCuota,
-  cantidadAdeudadas,
-  onGuardado,
-  onCancelar,
-}: Props) {
+// Registro de un pago: cuota mensual (se paga completa) u otro concepto.
+export default function FormularioPago({ alumnoId, plan, inicioCuota, cantidadAdeudadas, onGuardado, onCancelar }: Props) {
   // Si el plan todavía no tiene precio (0), el importe queda vacío para completarlo a mano.
   const precioPlan = plan && Number(plan.precioMensual) > 0 ? importeParaEditar(plan.precioMensual) : "";
-  // Si hay saldo pendiente se propone pagarlo primero; si no, una cuota nueva.
-  const [tipo, setTipo] = useState<TipoPago>(cuotasConSaldo.length > 0 ? "SALDO" : "CUOTA");
+  const [tipo, setTipo] = useState<TipoPago>("CUOTA");
   const [fecha, setFecha] = useState(hoyComoTexto());
   const [medio, setMedio] = useState<MedioPago>("EFECTIVO");
-  const [importeCuota, setImporteCuota] = useState(precioPlan);
-  const [cuotaId, setCuotaId] = useState(cuotasConSaldo[0]?.id ?? 0);
-  const [importe, setImporte] = useState(
-    cuotasConSaldo.length > 0 ? importeParaEditar(cuotasConSaldo[0].saldo) : precioPlan,
-  );
+  const [importe, setImporte] = useState(precioPlan);
   const [concepto, setConcepto] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
@@ -49,13 +35,7 @@ export default function FormularioPago({
     setTipo(nuevo);
     setErrores({});
     setError("");
-    if (nuevo === "SALDO") setImporte(importeParaEditar(cuotasConSaldo.find((c) => c.id === cuotaId)?.saldo ?? 0));
-    if (nuevo === "OTRO") setImporte("");
-  }
-
-  function cambiarCuota(id: number) {
-    setCuotaId(id);
-    setImporte(importeParaEditar(cuotasConSaldo.find((c) => c.id === id)?.saldo ?? 0));
+    setImporte(nuevo === "CUOTA" ? precioPlan : "");
   }
 
   async function enviar(evento: FormEvent<HTMLFormElement>) {
@@ -64,11 +44,7 @@ export default function FormularioPago({
     setErrores({});
     setGuardando(true);
 
-    let datos: DatosPago;
-    // La cuota se paga completa: lo que paga es el importe de la cuota.
-    if (tipo === "CUOTA") datos = { tipo, fecha, importeCuota, importe: importeCuota, medio };
-    else if (tipo === "SALDO") datos = { tipo, cuotaId, fecha, importe, medio };
-    else datos = { tipo, fecha, importe, concepto, medio };
+    const datos: DatosPago = tipo === "CUOTA" ? { tipo, fecha, importe, medio } : { tipo, fecha, importe, concepto, medio };
 
     try {
       await pagosApi.registrar(alumnoId, datos);
@@ -81,7 +57,6 @@ export default function FormularioPago({
     }
   }
 
-  // Avisos mientras se escribe.
   const sinPlan = tipo === "CUOTA" && !plan;
 
   return (
@@ -94,12 +69,6 @@ export default function FormularioPago({
           <input type="radio" checked={tipo === "CUOTA"} onChange={() => cambiarTipo("CUOTA")} />
           Cuota mensual
         </label>
-        {cuotasConSaldo.length > 0 && (
-          <label>
-            <input type="radio" checked={tipo === "SALDO"} onChange={() => cambiarTipo("SALDO")} />
-            Saldo pendiente
-          </label>
-        )}
         <label>
           <input type="radio" checked={tipo === "OTRO"} onChange={() => cambiarTipo("OTRO")} />
           Otro concepto
@@ -126,40 +95,20 @@ export default function FormularioPago({
           </select>
         </Campo>
 
-        {tipo === "CUOTA" && (
-          <Campo
-            etiqueta="Importe de la cuota"
-            obligatorio
-            errores={errores.importeCuota}
-            ayuda={plan ? `Precio de la membresía: ${textoPrecioPlan(plan.precioMensual)}` : undefined}
-          >
-            <input inputMode="decimal" value={importeCuota} onChange={(e) => setImporteCuota(e.target.value)} />
-          </Campo>
-        )}
-
-        {tipo === "SALDO" && (
-          <Campo etiqueta="Cuota" obligatorio errores={errores.cuotaId}>
-            <select value={cuotaId} onChange={(e) => cambiarCuota(Number(e.target.value))}>
-              {cuotasConSaldo.map((cuota) => (
-                <option key={cuota.id} value={cuota.id}>
-                  {formatearFecha(cuota.desde)} al {formatearFecha(cuota.vence)} — debe {formatearMoneda(cuota.saldo)}
-                </option>
-              ))}
-            </select>
-          </Campo>
-        )}
-
         {tipo === "OTRO" && (
           <Campo etiqueta="Concepto" obligatorio errores={errores.concepto}>
             <input value={concepto} onChange={(e) => setConcepto(e.target.value)} placeholder="Ej.: remera, evaluación extra" />
           </Campo>
         )}
 
-        {tipo !== "CUOTA" && (
-          <Campo etiqueta="Importe" obligatorio errores={errores.importe}>
-            <input inputMode="decimal" value={importe} onChange={(e) => setImporte(e.target.value)} placeholder="Ej.: 25.000" />
-          </Campo>
-        )}
+        <Campo
+          etiqueta={tipo === "CUOTA" ? "Importe de la cuota" : "Importe"}
+          obligatorio
+          errores={errores.importe}
+          ayuda={tipo === "CUOTA" && plan ? `Precio de la membresía: ${textoPrecioPlan(plan.precioMensual)}` : undefined}
+        >
+          <input inputMode="decimal" value={importe} onChange={(e) => setImporte(e.target.value)} placeholder="Ej.: 25.000" />
+        </Campo>
       </div>
 
       {tipo === "CUOTA" && (inicioCuota || /^\d{4}-\d{2}-\d{2}$/.test(fecha)) && (

@@ -29,7 +29,7 @@ export default function PagoNuevo() {
     return () => clearTimeout(espera);
   }, [buscar, alumno]);
 
-  // Al elegir el alumno se trae su plan, el estado de su cuota y sus saldos.
+  // Al elegir el alumno se trae su plan y el estado de su cuota.
   useEffect(() => {
     if (!alumno) return;
     setDatos(null);
@@ -44,7 +44,7 @@ export default function PagoNuevo() {
       <Link to="/pagos" className="volver">
         ← Pagos
       </Link>
-      <h1>Agregar un pago</h1>
+      <h1>Registrar un pago</h1>
 
       {error && <p className="mensaje-error">{error}</p>}
 
@@ -110,7 +110,6 @@ export default function PagoNuevo() {
               key={alumno.id}
               alumnoId={alumno.id}
               plan={datos.plan}
-              cuotasConSaldo={datos.situacion.cuotasConSaldo}
               inicioCuota={datos.situacion.inicioProximaCuota}
               cantidadAdeudadas={datos.situacion.cuotasAdeudadas.length}
               onGuardado={() => navigate("/pagos")}

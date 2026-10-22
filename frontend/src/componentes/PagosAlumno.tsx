@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { alumnosApi } from "../api/alumnos";
-import { pagosApi, type CuotaResumen, type Pago, type PagosAlumno as DatosPagos } from "../api/pagos";
+import { pagosApi, type Pago, type PagosAlumno as DatosPagos } from "../api/pagos";
 import { formatearFecha, formatearMoneda } from "../utils/formato";
 import {
   claseEstadoCuota,
@@ -77,17 +77,6 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
     }
   }
 
-  async function anularSaldo(cuota: CuotaResumen) {
-    const pregunta = `¿Anular el saldo pendiente de ${formatearMoneda(cuota.saldo)}? La cuota queda saldada con lo que ya pagó.`;
-    if (!window.confirm(pregunta)) return;
-    try {
-      await pagosApi.anularSaldo(cuota.id);
-      await cargar();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo anular el saldo");
-    }
-  }
-
   async function eliminarPago(pago: Pago) {
     const pregunta = `¿Eliminar el pago de ${formatearMoneda(pago.importe)} del ${formatearFecha(pago.fecha)}? No se puede deshacer.`;
     if (!window.confirm(pregunta)) return;
@@ -116,6 +105,8 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
   const adeudadas = situacion.cuotasAdeudadas;
   const aviso = { nombre: alumno.nombre, telefono: alumno.telefono, cantidadAdeudadas: adeudadas.length, ...situacion };
   const visibles = verTodos ? pagos : pagos.slice(0, CANTIDAD_INICIAL);
+  // Solo se puede eliminar el pago de la última cuota (las cuotas se encadenan) o uno por otro concepto.
+  const sePuedeEliminar = (pago: Pago) => !pago.cuotaId || pago.cuotaId === situacion.ultimaCuota?.id;
 
   return (
     <Contenedor enFicha={enFicha}>
@@ -167,26 +158,10 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
         </div>
       )}
 
-      {situacion.cuotasConSaldo.map((cuota) => (
-        <div key={cuota.id} className="pago-saldo">
-          <span>
-            Saldo pendiente: <strong>{formatearMoneda(cuota.saldo)}</strong>{" "}
-            <span className="texto-suave">
-              (cuota del {formatearFecha(cuota.desde)} al {formatearFecha(cuota.vence)}: pagó{" "}
-              {formatearMoneda(cuota.pagado)} de {formatearMoneda(cuota.importe)})
-            </span>
-          </span>
-          <button type="button" className="boton-link peligro" onClick={() => anularSaldo(cuota)}>
-            Anular saldo
-          </button>
-        </div>
-      ))}
-
       {registrando ? (
         <FormularioPago
           alumnoId={alumno.id}
           plan={plan}
-          cuotasConSaldo={situacion.cuotasConSaldo}
           inicioCuota={situacion.inicioProximaCuota}
           cantidadAdeudadas={adeudadas.length}
           onGuardado={pagoRegistrado}
@@ -231,9 +206,11 @@ export default function PagosAlumno({ alumno, onCambio, enFicha = true }: Props)
                     <td>{ETIQUETAS_MEDIO[pago.medio]}</td>
                     <td className="numero sin-salto">{formatearMoneda(pago.importe)}</td>
                     <td>
-                      <button type="button" className="boton-link peligro" onClick={() => eliminarPago(pago)}>
-                        Eliminar
-                      </button>
+                      {sePuedeEliminar(pago) && (
+                        <button type="button" className="boton-link peligro" onClick={() => eliminarPago(pago)}>
+                          Eliminar
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { ErrorHttp } from "../../lib/errores";
-import { fechaDesdeTexto, hoyComoTexto, textoDesdeFecha } from "../../lib/fechas";
+import { fechaDesdeTexto, textoDesdeFecha } from "../../lib/fechas";
 import { prisma } from "../../lib/prisma";
 import { esquemaAlumno, type DatosAlumno, type FiltrosAlumnos } from "./alumnos.schemas";
 
@@ -61,7 +61,7 @@ export async function listarAlumnos(filtros: FiltrosAlumnos) {
 export async function obtenerAlumno(id: number) {
   const alumno = await prisma.alumno.findUnique({
     where: { id },
-    include: { plan: { select: { id: true, nombre: true, modalidad: true, precioMensual: true, activo: true } } },
+    include: { plan: { select: { id: true, nombre: true, modalidad: true, precioMensual: true } } },
   });
   if (!alumno) {
     throw new ErrorHttp(404, "Alumno no encontrado");
@@ -112,7 +112,8 @@ export async function actualizarAlumno(id: number, datos: DatosAlumno) {
   });
 }
 
-// Asigna (o quita, con null) el plan del alumno. Queda en el historial con el nombre del plan.
+// Asigna (o quita, con null) el plan del alumno. Queda en el historial de cambios con el nombre del plan
+// (ese es el historial de membresías del alumno).
 export async function cambiarPlan(id: number, planId: number | null) {
   const actual = await obtenerAlumno(id);
   if (actual.planId === planId) {
@@ -120,30 +121,15 @@ export async function cambiarPlan(id: number, planId: number | null) {
   }
 
   const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
-  if (planId && (!plan || !plan.activo)) {
-    throw new ErrorHttp(400, "Esa membresía no existe o fue eliminada");
+  if (planId && !plan) {
+    throw new ErrorHttp(400, "Esa membresía no existe");
   }
 
-  const hoy = fechaDesdeTexto(hoyComoTexto());
   return prisma.$transaction(async (tx) => {
     const alumno = await tx.alumno.update({ where: { id }, data: { planId } });
     await tx.cambioAlumno.create({
       data: { alumnoId: id, campo: "plan", valorAnterior: actual.plan?.nombre ?? null, valorNuevo: plan?.nombre ?? null },
     });
-
-    // Historial de planes: se cierra la asignación vigente y se abre la nueva.
-    const vigente = await tx.asignacionPlan.findFirst({ where: { alumnoId: id, hasta: null } });
-    if (vigente) {
-      if (vigente.desde.getTime() === hoy.getTime()) {
-        // Se había asignado hoy mismo (ej.: se eligió el plan equivocado): no vale la pena dejarla en el historial.
-        await tx.asignacionPlan.delete({ where: { id: vigente.id } });
-      } else {
-        await tx.asignacionPlan.update({ where: { id: vigente.id }, data: { hasta: hoy } });
-      }
-    }
-    if (planId) {
-      await tx.asignacionPlan.create({ data: { alumnoId: id, planId, desde: hoy } });
-    }
     return alumno;
   });
 }

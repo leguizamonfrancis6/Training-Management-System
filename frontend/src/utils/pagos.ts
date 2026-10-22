@@ -56,9 +56,9 @@ interface DatosAviso {
   cantidadAdeudadas: number;
 }
 
-// Hace falta avisar si la cuota está vencida o por vencer, si nunca pagó o si tiene saldo pendiente.
-export function requiereAviso({ estado, deudaTotal }: DatosAviso) {
-  return estado !== "AL_DIA" || Number(deudaTotal) > 0;
+// Hace falta avisar si la cuota está vencida o por vencer, o si nunca pagó.
+export function requiereAviso({ estado }: DatosAviso) {
+  return estado !== "AL_DIA";
 }
 
 export function mensajeWhatsApp({ nombre, estado, vence, diasRestantes, deudaTotal, cantidadAdeudadas }: DatosAviso) {
@@ -71,7 +71,6 @@ export function mensajeWhatsApp({ nombre, estado, vence, diasRestantes, deudaTot
   const total = Number(deudaTotal) > 0 ? ` (total: ${formatearMoneda(deudaTotal)})` : "";
   if (cantidadAdeudadas > 1) partes.push(`Tenés ${cantidadAdeudadas} cuotas sin pagar${total}.`);
   else if (cantidadAdeudadas === 1 && Number(deudaTotal) > 0) partes.push(`El importe es de ${formatearMoneda(deudaTotal)}.`);
-  else if (cantidadAdeudadas === 0 && Number(deudaTotal) > 0) partes.push(`Te quedó un saldo pendiente de ${formatearMoneda(deudaTotal)}.`);
   partes.push("¡Gracias!");
   return partes.join(" ");
 }

@@ -3,10 +3,6 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-export function sumarMontos(montos: Prisma.Decimal[]) {
-  return montos.reduce((total, monto) => total.plus(monto), new Prisma.Decimal(0));
-}
-
 // Para mensajes de error: "$ 25.000,00".
 export function formatearMoneda(monto: Prisma.Decimal) {
   return Number(monto).toLocaleString("es-AR", { style: "currency", currency: "ARS" });

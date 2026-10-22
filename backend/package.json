@@ -9,7 +9,10 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "crear-admin": "tsx --env-file=.env src/scripts/crear-admin.ts"
+    "crear-admin": "tsx --env-file=.env src/scripts/crear-admin.ts",
+    "respaldo": "tsx --env-file=.env src/scripts/respaldo.ts",
+    "respaldo:probar": "tsx --env-file=.env src/scripts/respaldo.ts --probar",
+    "test": "tsx --test \"src/**/*.test.ts\""
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import Layout from "./componentes/Layout";
 import RutaProtegida from "./componentes/RutaProtegida";
@@ -6,7 +7,7 @@ import AlumnoEvaluaciones from "./paginas/AlumnoEvaluaciones";
 import AlumnoFicha from "./paginas/AlumnoFicha";
 import AlumnoFormulario from "./paginas/AlumnoFormulario";
 import Alumnos from "./paginas/Alumnos";
-import EditorRutina from "./paginas/EditorRutina";
+import CambiarPassword from "./paginas/CambiarPassword";
 import EvaluacionDetalle from "./paginas/EvaluacionDetalle";
 import EvaluacionFormulario from "./paginas/EvaluacionFormulario";
 import Evaluaciones from "./paginas/Evaluaciones";
@@ -17,11 +18,18 @@ import Login from "./paginas/Login";
 import PagoNuevo from "./paginas/PagoNuevo";
 import PagosDeAlumno from "./paginas/PagosDeAlumno";
 import Pagos from "./paginas/Pagos";
-import Planes from "./paginas/Planes";
-import PlanesAlumno from "./paginas/PlanesAlumno";
 import Pruebas from "./paginas/Pruebas";
 import Rutinas from "./paginas/Rutinas";
 import RutinasAlumno from "./paginas/RutinasAlumno";
+
+// El editor de rutinas usa pdf.js (más de 1 MB con su hoja de estilos): se descarga recién al abrirlo,
+// así las demás pantallas cargan más rápido.
+const EditorRutina = lazy(() => import("./paginas/EditorRutina"));
+const editorRutina = (
+  <Suspense fallback={<p className="texto-suave">Cargando…</p>}>
+    <EditorRutina />
+  </Suspense>
+);
 
 export default function App() {
   return (
@@ -52,13 +60,11 @@ export default function App() {
                 element={<GestionPlanes titulo="Configurar pagos" volverA="/pagos" etiquetaVolver="Pagos" />}
               />
               <Route path="ingresos" element={<Ingresos />} />
-              {/* Membresías: se gestionan desde Pagos */}
-              <Route path="pagos/membresias" element={<Planes />} />
-              <Route path="pagos/membresias/:id" element={<PlanesAlumno />} />
               <Route path="rutinas" element={<Rutinas />} />
               <Route path="rutinas/:alumnoId" element={<RutinasAlumno />} />
-              <Route path="rutinas/:alumnoId/nueva" element={<EditorRutina />} />
-              <Route path="rutinas/editar/:rutinaId" element={<EditorRutina />} />
+              <Route path="rutinas/:alumnoId/nueva" element={editorRutina} />
+              <Route path="rutinas/editar/:rutinaId" element={editorRutina} />
+              <Route path="cuenta/password" element={<CambiarPassword />} />
             </Route>
           </Route>
 

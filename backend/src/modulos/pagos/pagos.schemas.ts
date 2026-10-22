@@ -9,23 +9,14 @@ const fechaPago = z.iso
 
 const medio = z.enum(MedioPago, { error: "Elegí el medio de pago" });
 
-// Hay tres tipos de pago; el campo "tipo" indica cuál es y qué otros campos lleva
+// Hay dos tipos de pago; el campo "tipo" indica cuál es y qué otros campos lleva
 // (en Zod esto se llama "unión discriminada").
 export const esquemaPago = z.discriminatedUnion(
   "tipo",
   [
-    // Nueva cuota mensual: genera una cuota desde la fecha de pago hasta un mes después.
+    // Cuota mensual, pagada completa. "importe" es lo que vale la cuota (por defecto, el precio del plan).
     z.object({
       tipo: z.literal("CUOTA"),
-      fecha: fechaPago,
-      importeCuota: esquemaImporte, // lo que vale la cuota (por defecto, el precio del plan)
-      importe: esquemaImporte, // lo que paga ahora (si es menos, queda saldo)
-      medio,
-    }),
-    // Pago a cuenta del saldo pendiente de una cuota anterior.
-    z.object({
-      tipo: z.literal("SALDO"),
-      cuotaId: z.number({ error: "Elegí la cuota" }).int().positive(),
       fecha: fechaPago,
       importe: esquemaImporte,
       medio,

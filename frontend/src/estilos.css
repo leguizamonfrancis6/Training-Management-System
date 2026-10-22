@@ -608,11 +608,6 @@ h2 {
   margin: 0 0 16px;
 }
 
-.tabla-comparacion td:not(:first-child),
-.tabla-comparacion th:not(:first-child) {
-  text-align: right;
-}
-
 .fila-resultado {
   border: 2px solid var(--color-borde);
   border-radius: var(--radio);
@@ -988,21 +983,6 @@ h2 {
 
 .lista-seleccion button:hover {
   background: var(--color-fondo);
-}
-
-.lista-planes {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.plan-historial {
-  border-top: 2px solid var(--color-borde);
-  padding: 12px 0;
-}
-
-.plan-historial p {
-  margin: 4px 0 0;
 }
 
 .texto-recortado {

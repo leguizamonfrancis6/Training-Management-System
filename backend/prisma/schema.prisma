@@ -126,7 +126,6 @@ model Alumno {
   evaluaciones    Evaluacion[]
   cuotas          Cuota[]
   pagos           Pago[]
-  asignacionesPlan AsignacionPlan[]
   rutinas          Rutina[]
 
   @@index([apellido, nombre])
@@ -215,39 +214,21 @@ model ResultadoEvaluacion {
 // ---------- Planes y pagos ----------
 
 // Hay un plan fijo por modalidad (Presencial, Semi presencial, Online, Otro), creado por el seed.
-// Agustín solo define su precio mensual.
+// Agustín solo define su precio mensual. Los cambios de plan de cada alumno quedan en CambioAlumno (campo "plan").
 model Plan {
   id            Int       @id @default(autoincrement())
   nombre        String    @unique
   modalidad     Modalidad @unique
   precioMensual Decimal   @db.Decimal(12, 2)
-  activo        Boolean   @default(true)
   alumnos       Alumno[]
   cuotas        Cuota[]
-  asignaciones  AsignacionPlan[]
   creadoEn      DateTime  @default(now())
   actualizadoEn DateTime  @updatedAt
-}
-
-// Historial de planes de cada alumno: desde cuándo y hasta cuándo tuvo cada uno.
-// La asignación vigente es la que tiene hasta = null (y coincide con Alumno.planId).
-model AsignacionPlan {
-  id            Int       @id @default(autoincrement())
-  alumnoId      Int
-  alumno        Alumno    @relation(fields: [alumnoId], references: [id])
-  planId        Int
-  plan          Plan      @relation(fields: [planId], references: [id])
-  desde         DateTime  @db.Date
-  hasta         DateTime? @db.Date
-  creadoEn      DateTime  @default(now())
-  actualizadoEn DateTime  @updatedAt
-
-  @@index([alumnoId, desde])
 }
 
 // Un mes de entrenamiento (desde → vence). Se crea al registrar el pago, o con "anular deuda".
 // Las cuotas se encadenan: cada una empieza donde venció la anterior (o en la reactivación del alumno).
-// "importe" es lo que Agustín decide cobrar (por defecto, el precio del plan).
+// "importe" es lo que Agustín decide cobrar (por defecto, el precio del plan). Se paga completa, con un solo pago.
 // anulada = cuota adeudada que Agustín decidió no cobrar (importe 0, sin pagos).
 model Cuota {
   id            Int      @id @default(autoincrement())

@@ -14,4 +14,7 @@ export const authApi = {
   logout: () => pedir<void>("/auth/logout", { metodo: "POST" }),
 
   yo: () => pedir<{ usuario: Usuario }>("/auth/yo"),
+
+  cambiarPassword: (actual: string, nueva: string) =>
+    pedir<void>("/auth/password", { metodo: "POST", datos: { actual, nueva } }),
 };
