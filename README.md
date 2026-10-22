@@ -1,92 +1,94 @@
 # Sistema de gestión de entrenamiento
 
-Sistema web para administrar los alumnos de un centro de entrenamiento: fichas, anotaciones, evaluaciones, planes y pagos.
+Aplicación web para un centro de entrenamiento: fichas de alumnos, anotaciones de cada sesión, evaluaciones físicas con gráficos de evolución, rutinas sobre planilla PDF, membresías, cuotas, deudas y reporte de ingresos.
 
-- **Backend:** Node.js + TypeScript + Express, Prisma sobre PostgreSQL, Zod para validar.
-- **Frontend:** React + TypeScript con Vite.
-- El modelo de datos y las decisiones de diseño están en [docs/propuesta-etapa1.md](docs/propuesta-etapa1.md).
+La desarrollé para un profesor de Educación Física que tenía toda esta información repartida entre planillas de Google Drive y chats de WhatsApp. Hoy la usa una sola persona (el profesor, como administrador), desde una notebook.
+
+**Stack:** TypeScript de punta a punta · Node.js + Express · PostgreSQL + Prisma · Zod · React + Vite · `node:test`
+
+## Funcionalidades
+
+- **Alumnos:** ficha completa (datos personales, perfil deportivo / salud / recuperación, antecedentes), búsqueda sin tildes, bajas y reactivaciones (los alumnos nunca se borran) e **historial de cambios** campo por campo.
+- **Anotaciones de entrenamiento:** correcciones técnicas, cambios de ejercicio, molestias, etc., filtrables por tipo.
+- **Evaluaciones:** catálogo configurable de pruebas (CMJ, IMTP, movilidad…), carga de resultados por lado izquierdo / derecho, **gráficos de evolución** y aviso de la próxima reevaluación según el perfil del alumno.
+- **Rutinas:** se completan dentro de la página sobre una planilla PDF con campos editables (pdf.js) y se descargan como PDF.
+- **Pagos:** membresías con precio mensual, cuotas que se encadenan mes a mes, cálculo automático de la deuda, opción "anular deuda", recordatorio por **WhatsApp** con el mensaje ya armado y reporte de ingresos por período (efectivo / transferencia, por mes).
+- **Panel de inicio:** alumnos activos, cuotas por vencer, próximas evaluaciones y rutinas por renovar.
+
+## Decisiones técnicas
+
+- **Montos con `Decimal(12,2)`**, nunca `float`, y aceptando el formato argentino ("25.000,50").
+- **Fechas de calendario como `DATE` sin hora**, manejadas como texto `aaaa-mm-dd`, para que la zona horaria no corra un día. `sumarMeses` respeta los fines de mes (31/01 + 1 mes = 28/02).
+- **Lo que se puede calcular no se guarda:** la deuda y la próxima evaluación se calculan en cada consulta a partir de la última cuota o evaluación, así nunca quedan desactualizadas.
+- **Sesiones propias en lugar de JWT:** token aleatorio en una cookie `httpOnly` + `SameSite`; en la base se guarda solo su hash SHA-256, y cerrar sesión la revoca al instante. Contraseñas con bcrypt y bloqueo de 15 minutos tras 5 intentos fallidos.
+- **Validación con Zod en cada endpoint** y errores con un formato único (`{ error, campos }`) que el frontend muestra junto a cada campo, incluso en listas anidadas (`resultados.0.valor`).
+- **Cambios con historial en una sola transacción:** al editar una ficha se guardan los datos y una fila de historial por campo modificado, o no se guarda nada.
+- **Rutinas en PDF sin guardar el PDF:** se guardan solo los valores de los campos (JSON) y el PDF se rearma con pdf-lib sobre la plantilla al descargarlo. La plantilla nunca se modifica.
+- **Gráficos en SVG propio**, sin librerías de gráficos; pdf.js se carga recién al abrir el editor de rutinas (*lazy loading*).
+- **Pocas dependencias:** en el frontend solo React, react-router y pdf.js; el CSS es plano.
+- **Pruebas automáticas** de la lógica con más casos borde (fechas, importes, cálculo de deuda) con `node:test` y el reloj simulado.
+- **Copias de seguridad** con `pg_dump` y un comando que comprueba que la última copia se puede restaurar.
+
+## Estructura
 
 ```
-backend/    API REST (puerto 3000)
-frontend/   Interfaz web (puerto 5173)
-docs/       Documentación del proyecto
+backend/
+  prisma/              schema.prisma, migraciones y datos iniciales (seed)
+  src/
+    modulos/<modulo>/  <modulo>.routes.ts · .service.ts · .schemas.ts
+    lib/               fechas, montos, errores, cliente de Prisma
+    middlewares/       sesión, validación con Zod, manejo de errores
+    scripts/           crear usuario administrador, copias de seguridad
+frontend/
+  src/
+    api/               un archivo por recurso de la API
+    paginas/           una pantalla por ruta
+    componentes/       secciones y piezas reutilizables
+    hooks/             useCarga (pedir datos), useListaCorta
+    utils/             formato de fechas y montos, etiquetas
+docs/                  modelo de datos y decisiones de diseño
 ```
 
-## Requisitos
+El modelo de datos está explicado en [docs/propuesta-etapa1.md](docs/propuesta-etapa1.md).
 
-1. **Node.js 22 LTS**: instalador `.msi` de <https://nodejs.org>. Para comprobarlo, en una terminal nueva: `node -v`.
-2. **PostgreSQL 17**: instalador de EDB (<https://www.postgresql.org/download/windows/>).
-   - Anotar la contraseña que se le pone al usuario `postgres`.
-   - Dejar el puerto por defecto, **5432**.
-   - Stack Builder no hace falta (se puede cancelar al final).
-   - Para comprobarlo, buscar "Servicios" en Windows: el servicio `postgresql-x64-17` tiene que figurar "En ejecución".
+## Cómo correrlo
 
-## Puesta en marcha (la primera vez)
+Requisitos: **Node.js 22+** y **PostgreSQL 17**.
 
-### 1. Backend
-
-```powershell
+```bash
+# Backend
 cd backend
-copy .env.example .env
-```
-
-Editar `backend/.env` y reemplazar `CAMBIAR_CONTRASEÑA` por la contraseña del usuario `postgres`.
-
-```powershell
+cp .env.example .env       # completar DATABASE_URL con el usuario y la contraseña de PostgreSQL
 npm install
-npx prisma migrate dev     # crea la base "entrenamiento" y aplica las migraciones
-npm run db:seed            # carga el catálogo inicial de pruebas
-npm run crear-admin        # crea el usuario para ingresar (pide email, nombre y contraseña)
-npm run dev                # levanta la API en http://localhost:3000
-```
+npx prisma migrate dev     # crea la base y aplica las migraciones
+npm run db:seed            # catálogo inicial de pruebas y membresías
+npm run crear-admin        # usuario para ingresar (pide email, nombre y contraseña)
+npm run dev                # API en http://localhost:3000
 
-Para comprobar que funciona, abrir <http://localhost:3000/api/salud>. Tiene que responder `{"estado":"ok","baseDeDatos":"conectada"}`.
-
-### 2. Frontend (en otra terminal)
-
-```powershell
+# Frontend (en otra terminal)
 cd frontend
 npm install
 npm run dev                # http://localhost:5173
 ```
 
-Al abrir <http://localhost:5173> aparece la pantalla de ingreso: usar el email y la contraseña creados con `npm run crear-admin`.
+En desarrollo, Vite reenvía `/api` al backend: frontend y API comparten origen y la cookie de sesión funciona sin configurar CORS.
 
-## Uso diario
+La plantilla PDF de rutinas no está en el repositorio (es material del cliente). Para probar ese módulo sirve cualquier PDF con campos de texto: se indica su ruta en `PLANTILLA_RUTINA` (por defecto, `rutina.pdf` en la raíz del proyecto).
 
-Abrir dos terminales: `cd backend` + `npm run dev` en una, y `cd frontend` + `npm run dev` en la otra.
-
-## Comandos útiles (backend)
+## Comandos del backend
 
 | Comando | Para qué |
 |---|---|
-| `npm run dev` | API en modo desarrollo (se reinicia al guardar cambios) |
-| `npx prisma migrate dev --name <nombre>` | Crear y aplicar una migración después de modificar `schema.prisma` |
-| `npm run db:seed` | Cargar los datos iniciales (se puede repetir sin duplicar) |
-| `npm run db:studio` | Ver y editar la base desde el navegador (Prisma Studio) |
-| `npm run crear-admin` | Crear el usuario administrador, o cambiarle la contraseña si ya existe (cierra sus sesiones abiertas). Con la sesión iniciada, la contraseña también se cambia desde el sistema: clic en el nombre del usuario, arriba a la derecha |
-| `npm test` | Pruebas automáticas de los cálculos de fechas, importes y deuda (`*.test.ts`, con `node:test`) |
-| `npm run respaldo` | Copia de seguridad de la base (ver abajo) |
+| `npm run dev` | API en modo desarrollo (se reinicia al guardar) |
+| `npm test` | Pruebas automáticas (`*.test.ts`) |
+| `npm run db:studio` | Ver la base desde el navegador (Prisma Studio) |
+| `npm run crear-admin` | Crear el administrador o cambiarle la contraseña |
+| `npm run respaldo` | Copia de seguridad con `pg_dump` (conserva las últimas 30) |
 | `npm run respaldo:probar` | Restaura la última copia en una base temporal, la revisa y la borra |
 | `npm run build` / `npm start` | Compilar y ejecutar la versión de producción |
 
-## Copias de seguridad
+Copia automática diaria y cómo restaurar: [docs/respaldos.md](docs/respaldos.md).
 
-`npm run respaldo` (desde `backend`) guarda una copia de la base con `pg_dump` en la carpeta `respaldos/` (configurable con `RESPALDOS_DIR` en `backend/.env`) y conserva las últimas 30. Conviene que esa carpeta esté sincronizada con la nube (por ejemplo, Google Drive para escritorio): una copia en el mismo disco no sirve si la notebook se rompe. Cada tanto, comprobar que la copia se puede restaurar con `npm run respaldo:probar`.
+## Seguridad y datos personales
 
-Para que se haga sola todos los días a las 21 (o apenas se prenda la notebook, si estaba apagada), en PowerShell:
-
-```powershell
-$accion = New-ScheduledTaskAction -Execute "cmd.exe" -Argument '/c cd /d "C:\Proyectos\Sistema de gestion de entrenamiento\backend" && npm.cmd run respaldo'
-$disparador = New-ScheduledTaskTrigger -Daily -At 21:00
-Register-ScheduledTask -TaskName "Respaldo entrenamiento" -Action $accion -Trigger $disparador -Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable)
-```
-
-Para restaurar una copia sobre la base real (borra lo que haya): `pg_restore --clean --no-owner -U postgres -d entrenamiento respaldos\<archivo>.dump` (con los programas de `C:\Program Files\PostgreSQL\17\bin`).
-
-## Seguridad
-
-- Después de 5 contraseñas incorrectas seguidas, el ingreso se bloquea 15 minutos.
-
-- El archivo `backend/.env` contiene contraseñas y **nunca se sube** al repositorio (está en `.gitignore`). Se sube solo `.env.example`, sin datos reales.
-- La base contiene datos personales y de pagos de los alumnos: no compartir copias de la base ni exportaciones. La carpeta `respaldos/` está en `.gitignore`.
+La base guarda datos personales y de salud de los alumnos. Por eso el repositorio no incluye datos reales: el archivo `.env`, las copias de seguridad y la plantilla de rutinas están en `.gitignore`.

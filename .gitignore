@@ -26,3 +26,6 @@ Thumbs.db
 
 # Copias de seguridad de la base (contienen datos personales)
 /respaldos/
+
+# Notas internas del proyecto (contexto para el asistente de código)
+/CLAUDE.md
